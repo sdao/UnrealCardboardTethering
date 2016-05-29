@@ -364,13 +364,14 @@ FCustomHMD::BridgeBaseImpl* FCustomHMD::GetActiveRHIBridgeImpl() {
 }
 
 FCustomHMD::FCustomHMD() :
-	CurHmdOrientation(FQuat::Identity),
-	LastHmdOrientation(FQuat::Identity),
-	DeltaControlRotation(FRotator::ZeroRotator),
-	DeltaControlOrientation(FQuat::Identity),
-	LastSensorTime(-1.0),
+  CurHmdOrientation(FQuat::Identity),
+  LastHmdOrientation(FQuat::Identity),
+  DeltaControlRotation(FRotator::ZeroRotator),
+  DeltaControlOrientation(FQuat::Identity),
+  LastSensorTime(-1.0),
   WindowMirrorMode(2),
-  TurboJpegLibraryHandle(0)
+  TurboJpegLibraryHandle(0),
+  TurboJpegCompressor(0)
 {
   static const FName RendererModuleName("Renderer");
   RendererModule = FModuleManager::GetModulePtr<IRendererModule>(RendererModuleName);
@@ -393,7 +394,9 @@ FCustomHMD::FCustomHMD() :
   // Looks like dialogs don't appear in this method, even if it works. Oops.
   if (TurboJpegLibraryHandle) {
     // Call the test function in the third party library that opens a message box
-    FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ThirdPartyLibrarySuccess", "Found it!"));
+    UE_LOG(LogTemp, Warning, TEXT("Found it!"));
+    TurboJpegCompressor = tjInitCompress();
+    UE_LOG(LogTemp, Warning, TEXT("jpeg compressor handle %d"), TurboJpegCompressor);
   } else
 #endif // PLATFORM_WINDOWS
   {
@@ -403,6 +406,7 @@ FCustomHMD::FCustomHMD() :
 
 FCustomHMD::~FCustomHMD()
 {
+  tjDestroy(TurboJpegCompressor);
   FPlatformProcess::FreeDllHandle(TurboJpegLibraryHandle);
   TurboJpegLibraryHandle = nullptr;
 }

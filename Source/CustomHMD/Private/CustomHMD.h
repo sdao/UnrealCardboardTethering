@@ -12,6 +12,8 @@
 #include "HideWindowsPlatformTypes.h"
 #endif
 
+#include "turbojpeg.h"
+
 /**
  * Simple Head Mounted Display
  */
@@ -162,6 +164,7 @@ private:
   int32 WindowMirrorMode;
   IRendererModule* RendererModule;
   void* TurboJpegLibraryHandle;
+  tjhandle TurboJpegCompressor;
 
 #if PLATFORM_WINDOWS
   TRefCountPtr<D3D11Bridge>	pD3D11Bridge;
