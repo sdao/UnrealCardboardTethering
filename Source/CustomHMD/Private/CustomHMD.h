@@ -9,10 +9,11 @@
 #if PLATFORM_WINDOWS
 #include "AllowWindowsPlatformTypes.h"
 #include <d3d11.h>
-#include "turbojpeg.h"
-#include "libusb.h"
+#include "turbojpeg.h" // Need tjhandle
 #include "HideWindowsPlatformTypes.h"
 #endif
+
+struct libusb_context;
 
 /**
  * Simple Head Mounted Display

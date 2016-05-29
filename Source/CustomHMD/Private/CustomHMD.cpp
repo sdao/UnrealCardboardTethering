@@ -7,6 +7,12 @@
 #include "IPluginManager.h"
 #include "PostProcess/PostProcessHMD.h"
 
+#if PLATFORM_WINDOWS
+#include "AllowWindowsPlatformTypes.h"
+#include "libusb.h"
+#include "HideWindowsPlatformTypes.h"
+#endif
+
 //---------------------------------------------------
 // CustomHMD Plugin Implementation
 //---------------------------------------------------

@@ -53,17 +53,16 @@ typedef unsigned __int32  uint32_t;
 #include <sys/time.h>
 #endif
 
-/* NOTE(sdao): I have renamed libusb_config_descriptor.interface to
- * libusb_config_descriptor.interfaces to avoid this problem because undefining
- * interface wreaks havoc in Unreal.
- *
- * 'interface' might be defined as a macro on Windows, so we need to
+/* 'interface' might be defined as a macro on Windows, so we need to
  * undefine it so as not to break the current libusb API, because
  * libusb_config_descriptor has an 'interface' member
  * As this can be problematic if you include windows.h after libusb.h
  * in your sources, we force windows.h to be included first. */
 #if defined(_WIN32) || defined(__CYGWIN__)
 #include <windows.h>
+#if defined(interface)
+#undef interface
+#endif
 #endif
 
 /** \def LIBUSB_CALL
@@ -593,7 +592,7 @@ struct libusb_config_descriptor {
 
 	/** Array of interfaces supported by this configuration. The length of
 	 * this array is determined by the bNumInterfaces field. */
-	const struct libusb_interface *interfaces;
+	const struct libusb_interface *interface;
 
 	/** Extra descriptors. If libusb encounters unknown configuration
 	 * descriptors, it will store them here, should you wish to parse them. */
