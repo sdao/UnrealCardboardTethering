@@ -402,12 +402,31 @@ FCustomHMD::FCustomHMD() :
   {
     FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ThirdPartyLibraryError", "Failed to load example third party library"));
   }
+
+#if PLATFORM_WINDOWS
+  LibraryPath = FPaths::Combine(*BaseDir, TEXT("Binaries/ThirdParty/libusb/Win64/libusb-1.0.dll"));
+
+  LibUsbLibraryHandle = !LibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*LibraryPath) : nullptr;
+
+  // Looks like dialogs don't appear in this method, even if it works. Oops.
+  if (LibUsbLibraryHandle) {
+    // Call the test function in the third party library that opens a message box
+    UE_LOG(LogTemp, Warning, TEXT("Found usb!"));
+    libusb_init(&LibUsb);
+  } else
+#endif // PLATFORM_WINDOWS
+  {
+    FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ThirdPartyLibraryError", "Failed to load example third party library"));
+  }
 }
 
 FCustomHMD::~FCustomHMD()
 {
   tjDestroy(TurboJpegCompressor);
+  libusb_exit(LibUsb);
   FPlatformProcess::FreeDllHandle(TurboJpegLibraryHandle);
+  TurboJpegLibraryHandle = nullptr;
+  FPlatformProcess::FreeDllHandle(LibUsbLibraryHandle);
   TurboJpegLibraryHandle = nullptr;
 }
 

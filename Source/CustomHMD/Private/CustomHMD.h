@@ -9,10 +9,10 @@
 #if PLATFORM_WINDOWS
 #include "AllowWindowsPlatformTypes.h"
 #include <d3d11.h>
+#include "turbojpeg.h"
+#include "libusb.h"
 #include "HideWindowsPlatformTypes.h"
 #endif
-
-#include "turbojpeg.h"
 
 /**
  * Simple Head Mounted Display
@@ -164,7 +164,9 @@ private:
   int32 WindowMirrorMode;
   IRendererModule* RendererModule;
   void* TurboJpegLibraryHandle;
+  void* LibUsbLibraryHandle;
   tjhandle TurboJpegCompressor;
+  libusb_context* LibUsb;
 
 #if PLATFORM_WINDOWS
   TRefCountPtr<D3D11Bridge>	pD3D11Bridge;

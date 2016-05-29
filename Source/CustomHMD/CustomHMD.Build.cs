@@ -35,13 +35,15 @@ namespace UnrealBuildTool.Rules
             PublicDependencyModuleNames.AddRange(
             new string[]
             {
-                "turbojpeg"
+                "turbojpeg",
+                "libusb"
 				// ... add other public dependencies that you statically link with here ...
 			}
             );
 
             AddThirdPartyPrivateStaticDependencies(Target,
-                "turbojpeg"
+                "turbojpeg",
+                "libusb"
                 // ... add any third party modules that your module depends on here ...
                 );
         }
