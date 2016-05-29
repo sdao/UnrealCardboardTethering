@@ -27,9 +27,23 @@ namespace UnrealBuildTool.Rules
 					"RenderCore",
 					"Renderer",
 					"ShaderCore",
-					"HeadMountedDisplay"
+					"HeadMountedDisplay",
+                    "Projects"
 				}
 				);
-		}
+
+            PublicDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "turbojpeg"
+				// ... add other public dependencies that you statically link with here ...
+			}
+            );
+
+            AddThirdPartyPrivateStaticDependencies(Target,
+                "turbojpeg"
+                // ... add any third party modules that your module depends on here ...
+                );
+        }
 	}
 }

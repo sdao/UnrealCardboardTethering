@@ -4,11 +4,14 @@
 #include "CustomHMD.h"
 #include "RendererPrivate.h"
 #include "ScenePrivate.h"
+#include "IPluginManager.h"
 #include "PostProcess/PostProcessHMD.h"
 
 //---------------------------------------------------
 // CustomHMD Plugin Implementation
 //---------------------------------------------------
+
+#define LOCTEXT_NAMESPACE "FCustomHMD"
 
 class FCustomHMDPlugin : public ICustomHMDPlugin
 {
@@ -366,7 +369,8 @@ FCustomHMD::FCustomHMD() :
 	DeltaControlRotation(FRotator::ZeroRotator),
 	DeltaControlOrientation(FQuat::Identity),
 	LastSensorTime(-1.0),
-  WindowMirrorMode(2)
+  WindowMirrorMode(2),
+  TurboJpegLibraryHandle(0)
 {
   static const FName RendererModuleName("Renderer");
   RendererModule = FModuleManager::GetModulePtr<IRendererModule>(RendererModuleName);
@@ -376,10 +380,31 @@ FCustomHMD::FCustomHMD() :
     pD3D11Bridge = new D3D11Bridge(this);
   }
 #endif
+
+  FString BaseDir = IPluginManager::Get().FindPlugin("CustomHMD")->GetBaseDir();
+
+  // Add on the relative location of the third party dll and load it
+  FString LibraryPath;
+#if PLATFORM_WINDOWS
+  LibraryPath = FPaths::Combine(*BaseDir, TEXT("Binaries/ThirdParty/turbojpeg/Win64/turbojpeg.dll"));
+
+  TurboJpegLibraryHandle = !LibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*LibraryPath) : nullptr;
+
+  // Looks like dialogs don't appear in this method, even if it works. Oops.
+  if (TurboJpegLibraryHandle) {
+    // Call the test function in the third party library that opens a message box
+    FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ThirdPartyLibrarySuccess", "Found it!"));
+  } else
+#endif // PLATFORM_WINDOWS
+  {
+    FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ThirdPartyLibraryError", "Failed to load example third party library"));
+  }
 }
 
 FCustomHMD::~FCustomHMD()
 {
+  FPlatformProcess::FreeDllHandle(TurboJpegLibraryHandle);
+  TurboJpegLibraryHandle = nullptr;
 }
 
 bool FCustomHMD::IsInitialized() const
@@ -389,7 +414,7 @@ bool FCustomHMD::IsInitialized() const
 
 void FCustomHMD::UpdateViewport(bool bUseSeparateRenderTarget, const FViewport& InViewport, SViewport* ViewportWidget) {
   check(IsInGameThread());
-
+  //UE_LOG(LogTemp, Warning, TEXT("jpeg handle %d"), TurboJpegLibraryHandle);
   FRHIViewport* const ViewportRHI = InViewport.GetViewportRHI().GetReference();
 
   if (!IsStereoEnabled()) {
@@ -434,4 +459,3 @@ bool FCustomHMD::NeedReAllocateViewportRenderTarget(const FViewport& Viewport) {
   }
   return false;
 }
-

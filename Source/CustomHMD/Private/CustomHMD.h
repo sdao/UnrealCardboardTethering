@@ -161,6 +161,7 @@ private:
 	double					LastSensorTime;
   int32 WindowMirrorMode;
   IRendererModule* RendererModule;
+  void* TurboJpegLibraryHandle;
 
 #if PLATFORM_WINDOWS
   TRefCountPtr<D3D11Bridge>	pD3D11Bridge;
