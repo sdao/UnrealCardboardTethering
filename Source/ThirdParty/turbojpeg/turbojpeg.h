@@ -30,11 +30,11 @@
 #define __TURBOJPEG_H__
 
 #if defined(_WIN32) && defined(DLLDEFINE)
-#define TJDLLEXPORT __declspec(TJDLLEXPORT)
+#define DLLEXPORT __declspec(DLLEXPORT)
 #else
-#define TJDLLEXPORT
+#define DLLEXPORT
 #endif
-#define TJDLLCALL
+#define DLLCALL
 
 
 /**
@@ -610,7 +610,7 @@ extern "C" {
  * @return a handle to the newly-created instance, or NULL if an error
  * occurred (see #tjGetErrorStr().)
  */
-TJDLLEXPORT tjhandle TJDLLCALL tjInitCompress(void);
+DLLEXPORT tjhandle DLLCALL tjInitCompress(void);
 
 
 /**
@@ -672,7 +672,7 @@ TJDLLEXPORT tjhandle TJDLLCALL tjInitCompress(void);
  *
  * @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr().)
 */
-TJDLLEXPORT int TJDLLCALL tjCompress2(tjhandle handle, const unsigned char *srcBuf,
+DLLEXPORT int DLLCALL tjCompress2(tjhandle handle, const unsigned char *srcBuf,
   int width, int pitch, int height, int pixelFormat, unsigned char **jpegBuf,
   unsigned long *jpegSize, int jpegSubsamp, int jpegQual, int flags);
 
@@ -736,7 +736,7 @@ TJDLLEXPORT int TJDLLCALL tjCompress2(tjhandle handle, const unsigned char *srcB
  *
  * @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr().)
 */
-TJDLLEXPORT int TJDLLCALL tjCompressFromYUV(tjhandle handle,
+DLLEXPORT int DLLCALL tjCompressFromYUV(tjhandle handle,
   const unsigned char *srcBuf, int width, int pad, int height, int subsamp,
   unsigned char **jpegBuf, unsigned long *jpegSize, int jpegQual, int flags);
 
@@ -806,7 +806,7 @@ TJDLLEXPORT int TJDLLCALL tjCompressFromYUV(tjhandle handle,
  *
  * @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr().)
 */
-TJDLLEXPORT int TJDLLCALL tjCompressFromYUVPlanes(tjhandle handle,
+DLLEXPORT int DLLCALL tjCompressFromYUVPlanes(tjhandle handle,
   const unsigned char **srcPlanes, int width, const int *strides, int height,
   int subsamp, unsigned char **jpegBuf, unsigned long *jpegSize, int jpegQual,
   int flags);
@@ -834,7 +834,7 @@ TJDLLEXPORT int TJDLLCALL tjCompressFromYUVPlanes(tjhandle handle,
  * @return the maximum size of the buffer (in bytes) required to hold the
  * image, or -1 if the arguments are out of bounds.
  */
-TJDLLEXPORT unsigned long TJDLLCALL tjBufSize(int width, int height,
+DLLEXPORT unsigned long DLLCALL tjBufSize(int width, int height,
   int jpegSubsamp);
 
 
@@ -855,7 +855,7 @@ TJDLLEXPORT unsigned long TJDLLCALL tjBufSize(int width, int height,
  * @return the size of the buffer (in bytes) required to hold the image, or
  * -1 if the arguments are out of bounds.
  */
-TJDLLEXPORT unsigned long TJDLLCALL tjBufSizeYUV2(int width, int pad, int height,
+DLLEXPORT unsigned long DLLCALL tjBufSizeYUV2(int width, int pad, int height,
   int subsamp);
 
 
@@ -880,7 +880,7 @@ TJDLLEXPORT unsigned long TJDLLCALL tjBufSizeYUV2(int width, int pad, int height
  * @return the size of the buffer (in bytes) required to hold the YUV image
  * plane, or -1 if the arguments are out of bounds.
  */
-TJDLLEXPORT unsigned long TJDLLCALL tjPlaneSizeYUV(int componentID, int width,
+DLLEXPORT unsigned long DLLCALL tjPlaneSizeYUV(int componentID, int width,
   int stride, int height, int subsamp);
 
 
@@ -898,7 +898,7 @@ TJDLLEXPORT unsigned long TJDLLCALL tjPlaneSizeYUV(int componentID, int width,
  * @return the plane width of a YUV image plane with the given parameters, or
  * -1 if the arguments are out of bounds.
  */
-TJDLLEXPORT int tjPlaneWidth(int componentID, int width, int subsamp);
+DLLEXPORT int tjPlaneWidth(int componentID, int width, int subsamp);
 
 
 /**
@@ -915,7 +915,7 @@ TJDLLEXPORT int tjPlaneWidth(int componentID, int width, int subsamp);
  * @return the plane height of a YUV image plane with the given parameters, or
  * -1 if the arguments are out of bounds.
  */
-TJDLLEXPORT int tjPlaneHeight(int componentID, int height, int subsamp);
+DLLEXPORT int tjPlaneHeight(int componentID, int height, int subsamp);
 
 
 /**
@@ -966,7 +966,7 @@ TJDLLEXPORT int tjPlaneHeight(int componentID, int height, int subsamp);
  *
  * @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr().)
 */
-TJDLLEXPORT int TJDLLCALL tjEncodeYUV3(tjhandle handle,
+DLLEXPORT int DLLCALL tjEncodeYUV3(tjhandle handle,
   const unsigned char *srcBuf, int width, int pitch, int height,
   int pixelFormat, unsigned char *dstBuf, int pad, int subsamp, int flags);
 
@@ -1024,7 +1024,7 @@ TJDLLEXPORT int TJDLLCALL tjEncodeYUV3(tjhandle handle,
  *
  * @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr().)
 */
-TJDLLEXPORT int TJDLLCALL tjEncodeYUVPlanes(tjhandle handle,
+DLLEXPORT int DLLCALL tjEncodeYUVPlanes(tjhandle handle,
   const unsigned char *srcBuf, int width, int pitch, int height,
   int pixelFormat, unsigned char **dstPlanes, int *strides, int subsamp,
   int flags);
@@ -1036,7 +1036,7 @@ TJDLLEXPORT int TJDLLCALL tjEncodeYUVPlanes(tjhandle handle,
  * @return a handle to the newly-created instance, or NULL if an error
  * occurred (see #tjGetErrorStr().)
 */
-TJDLLEXPORT tjhandle TJDLLCALL tjInitDecompress(void);
+DLLEXPORT tjhandle DLLCALL tjInitDecompress(void);
 
 
 /**
@@ -1064,7 +1064,7 @@ TJDLLEXPORT tjhandle TJDLLCALL tjInitDecompress(void);
  *
  * @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr().)
 */
-TJDLLEXPORT int TJDLLCALL tjDecompressHeader3(tjhandle handle,
+DLLEXPORT int DLLCALL tjDecompressHeader3(tjhandle handle,
   const unsigned char *jpegBuf, unsigned long jpegSize, int *width,
   int *height, int *jpegSubsamp, int *jpegColorspace);
 
@@ -1079,7 +1079,7 @@ TJDLLEXPORT int TJDLLCALL tjDecompressHeader3(tjhandle handle,
  * @return a pointer to a list of fractional scaling factors, or NULL if an
  * error is encountered (see #tjGetErrorStr().)
 */
-TJDLLEXPORT tjscalingfactor* TJDLLCALL tjGetScalingFactors(int *numscalingfactors);
+DLLEXPORT tjscalingfactor* DLLCALL tjGetScalingFactors(int *numscalingfactors);
 
 
 /**
@@ -1131,7 +1131,7 @@ TJDLLEXPORT tjscalingfactor* TJDLLCALL tjGetScalingFactors(int *numscalingfactor
  *
  * @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr().)
  */
-TJDLLEXPORT int TJDLLCALL tjDecompress2(tjhandle handle,
+DLLEXPORT int DLLCALL tjDecompress2(tjhandle handle,
   const unsigned char *jpegBuf, unsigned long jpegSize, unsigned char *dstBuf,
   int width, int pitch, int height, int pixelFormat, int flags);
 
@@ -1181,7 +1181,7 @@ TJDLLEXPORT int TJDLLCALL tjDecompress2(tjhandle handle,
  *
  * @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr().)
  */
-TJDLLEXPORT int TJDLLCALL tjDecompressToYUV2(tjhandle handle,
+DLLEXPORT int DLLCALL tjDecompressToYUV2(tjhandle handle,
   const unsigned char *jpegBuf, unsigned long jpegSize, unsigned char *dstBuf,
   int width, int pad, int height, int flags);
 
@@ -1237,7 +1237,7 @@ TJDLLEXPORT int TJDLLCALL tjDecompressToYUV2(tjhandle handle,
  *
  * @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr().)
  */
-TJDLLEXPORT int TJDLLCALL tjDecompressToYUVPlanes(tjhandle handle,
+DLLEXPORT int DLLCALL tjDecompressToYUVPlanes(tjhandle handle,
   const unsigned char *jpegBuf, unsigned long jpegSize,
   unsigned char **dstPlanes, int width, int *strides, int height, int flags);
 
@@ -1289,7 +1289,7 @@ TJDLLEXPORT int TJDLLCALL tjDecompressToYUVPlanes(tjhandle handle,
  *
  * @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr().)
  */
-TJDLLEXPORT int TJDLLCALL tjDecodeYUV(tjhandle handle, const unsigned char *srcBuf,
+DLLEXPORT int DLLCALL tjDecodeYUV(tjhandle handle, const unsigned char *srcBuf,
   int pad, int subsamp, unsigned char *dstBuf, int width, int pitch,
   int height, int pixelFormat, int flags);
 
@@ -1346,7 +1346,7 @@ TJDLLEXPORT int TJDLLCALL tjDecodeYUV(tjhandle handle, const unsigned char *srcB
  *
  * @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr().)
  */
-TJDLLEXPORT int TJDLLCALL tjDecodeYUVPlanes(tjhandle handle,
+DLLEXPORT int DLLCALL tjDecodeYUVPlanes(tjhandle handle,
   const unsigned char **srcPlanes, const int *strides, int subsamp,
   unsigned char *dstBuf, int width, int pitch, int height, int pixelFormat,
   int flags);
@@ -1358,7 +1358,7 @@ TJDLLEXPORT int TJDLLCALL tjDecodeYUVPlanes(tjhandle handle,
  * @return a handle to the newly-created instance, or NULL if an error
  * occurred (see #tjGetErrorStr().)
  */
-TJDLLEXPORT tjhandle TJDLLCALL tjInitTransform(void);
+DLLEXPORT tjhandle DLLCALL tjInitTransform(void);
 
 
 /**
@@ -1416,7 +1416,7 @@ TJDLLEXPORT tjhandle TJDLLCALL tjInitTransform(void);
  *
  * @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr().)
  */
-TJDLLEXPORT int TJDLLCALL tjTransform(tjhandle handle,
+DLLEXPORT int DLLCALL tjTransform(tjhandle handle,
   const unsigned char *jpegBuf, unsigned long jpegSize, int n,
   unsigned char **dstBufs, unsigned long *dstSizes, tjtransform *transforms,
   int flags);
@@ -1430,7 +1430,7 @@ TJDLLEXPORT int TJDLLCALL tjTransform(tjhandle handle,
  *
  * @return 0 if successful, or -1 if an error occurred (see #tjGetErrorStr().)
  */
-TJDLLEXPORT int TJDLLCALL tjDestroy(tjhandle handle);
+DLLEXPORT int DLLCALL tjDestroy(tjhandle handle);
 
 
 /**
@@ -1446,7 +1446,7 @@ TJDLLEXPORT int TJDLLCALL tjDestroy(tjhandle handle);
  *
  * @sa tjFree()
  */
-TJDLLEXPORT unsigned char* TJDLLCALL tjAlloc(int bytes);
+DLLEXPORT unsigned char* DLLCALL tjAlloc(int bytes);
 
 
 /**
@@ -1459,7 +1459,7 @@ TJDLLEXPORT unsigned char* TJDLLCALL tjAlloc(int bytes);
  *
  * @sa tjAlloc()
  */
-TJDLLEXPORT void TJDLLCALL tjFree(unsigned char *buffer);
+DLLEXPORT void DLLCALL tjFree(unsigned char *buffer);
 
 
 /**
@@ -1467,7 +1467,7 @@ TJDLLEXPORT void TJDLLCALL tjFree(unsigned char *buffer);
  *
  * @return a descriptive error message explaining why the last command failed.
  */
-TJDLLEXPORT char* TJDLLCALL tjGetErrorStr(void);
+DLLEXPORT char* DLLCALL tjGetErrorStr(void);
 
 
 /* Deprecated functions and macros */
@@ -1495,38 +1495,38 @@ TJDLLEXPORT char* TJDLLCALL tjGetErrorStr(void);
 #define TJ_FASTUPSAMPLE TJFLAG_FASTUPSAMPLE
 #define TJ_YUV 512
 
-TJDLLEXPORT unsigned long TJDLLCALL TJBUFSIZE(int width, int height);
+DLLEXPORT unsigned long DLLCALL TJBUFSIZE(int width, int height);
 
-TJDLLEXPORT unsigned long TJDLLCALL TJBUFSIZEYUV(int width, int height,
+DLLEXPORT unsigned long DLLCALL TJBUFSIZEYUV(int width, int height,
   int jpegSubsamp);
 
-TJDLLEXPORT unsigned long TJDLLCALL tjBufSizeYUV(int width, int height,
+DLLEXPORT unsigned long DLLCALL tjBufSizeYUV(int width, int height,
   int subsamp);
 
-TJDLLEXPORT int TJDLLCALL tjCompress(tjhandle handle, unsigned char *srcBuf,
+DLLEXPORT int DLLCALL tjCompress(tjhandle handle, unsigned char *srcBuf,
   int width, int pitch, int height, int pixelSize, unsigned char *dstBuf,
   unsigned long *compressedSize, int jpegSubsamp, int jpegQual, int flags);
 
-TJDLLEXPORT int TJDLLCALL tjEncodeYUV(tjhandle handle,
+DLLEXPORT int DLLCALL tjEncodeYUV(tjhandle handle,
   unsigned char *srcBuf, int width, int pitch, int height, int pixelSize,
   unsigned char *dstBuf, int subsamp, int flags);
 
-TJDLLEXPORT int TJDLLCALL tjEncodeYUV2(tjhandle handle,
+DLLEXPORT int DLLCALL tjEncodeYUV2(tjhandle handle,
   unsigned char *srcBuf, int width, int pitch, int height, int pixelFormat,
   unsigned char *dstBuf, int subsamp, int flags);
 
-TJDLLEXPORT int TJDLLCALL tjDecompressHeader(tjhandle handle,
+DLLEXPORT int DLLCALL tjDecompressHeader(tjhandle handle,
   unsigned char *jpegBuf, unsigned long jpegSize, int *width, int *height);
 
-TJDLLEXPORT int TJDLLCALL tjDecompressHeader2(tjhandle handle,
+DLLEXPORT int DLLCALL tjDecompressHeader2(tjhandle handle,
   unsigned char *jpegBuf, unsigned long jpegSize, int *width, int *height,
   int *jpegSubsamp);
 
-TJDLLEXPORT int TJDLLCALL tjDecompress(tjhandle handle,
+DLLEXPORT int DLLCALL tjDecompress(tjhandle handle,
   unsigned char *jpegBuf, unsigned long jpegSize, unsigned char *dstBuf,
   int width, int pitch, int height, int pixelSize, int flags);
 
-TJDLLEXPORT int TJDLLCALL tjDecompressToYUV(tjhandle handle,
+DLLEXPORT int DLLCALL tjDecompressToYUV(tjhandle handle,
   unsigned char *jpegBuf, unsigned long jpegSize, unsigned char *dstBuf,
   int flags);
 

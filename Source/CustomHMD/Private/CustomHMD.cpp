@@ -7,12 +7,6 @@
 #include "IPluginManager.h"
 #include "PostProcess/PostProcessHMD.h"
 
-#if PLATFORM_WINDOWS
-#include "AllowWindowsPlatformTypes.h"
-#include "libusb.h"
-#include "HideWindowsPlatformTypes.h"
-#endif
-
 //---------------------------------------------------
 // CustomHMD Plugin Implementation
 //---------------------------------------------------
@@ -376,9 +370,7 @@ FCustomHMD::FCustomHMD() :
   DeltaControlOrientation(FQuat::Identity),
   LastSensorTime(-1.0),
   WindowMirrorMode(2),
-  TurboJpegLibraryHandle(0),
-  TurboJpegCompressor(0),
-  LibUsb(nullptr)
+  TurboJpegLibraryHandle(0)
 {
   static const FName RendererModuleName("Renderer");
   RendererModule = FModuleManager::GetModulePtr<IRendererModule>(RendererModuleName);
@@ -402,9 +394,7 @@ FCustomHMD::FCustomHMD() :
 
   if (TurboJpegLibraryHandle && LibUsbLibraryHandle) {
     UE_LOG(LogTemp, Warning, TEXT("Found them!"));
-    libusb_init(&LibUsb);
-    TurboJpegCompressor = tjInitCompress();
-    UE_LOG(LogTemp, Warning, TEXT("libusb %d, turbojpeg %d"), LibUsb, TurboJpegCompressor);
+    SharedLibraryInitParams = std::make_shared<LibraryInitParams>();
   } else
 #endif // PLATFORM_WINDOWS
   {
@@ -414,11 +404,6 @@ FCustomHMD::FCustomHMD() :
 
 FCustomHMD::~FCustomHMD()
 {
-  libusb_exit(LibUsb);
-  LibUsb = nullptr;
-  tjDestroy(TurboJpegCompressor);
-  TurboJpegCompressor = nullptr;
-
   FPlatformProcess::FreeDllHandle(TurboJpegLibraryHandle);
   TurboJpegLibraryHandle = nullptr;
   FPlatformProcess::FreeDllHandle(LibUsbLibraryHandle);

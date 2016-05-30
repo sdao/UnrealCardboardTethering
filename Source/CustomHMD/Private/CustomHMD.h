@@ -5,15 +5,14 @@
 #include "HeadMountedDisplay.h"
 #include "IHeadMountedDisplay.h"
 #include "SceneViewExtension.h"
+#include "LibraryInitParams.h"
+#include <memory>
 
 #if PLATFORM_WINDOWS
 #include "AllowWindowsPlatformTypes.h"
 #include <d3d11.h>
-#include "turbojpeg.h" // Need tjhandle
 #include "HideWindowsPlatformTypes.h"
 #endif
-
-struct libusb_context;
 
 /**
  * Simple Head Mounted Display
@@ -154,7 +153,7 @@ public:
 	/** @return	True if the HMD was initialized OK */
 	bool IsInitialized() const;
 
-  tjhandle TurboJpegCompressor;
+  std::shared_ptr<LibraryInitParams> SharedLibraryInitParams;
 
 private:
 
@@ -169,7 +168,6 @@ private:
   IRendererModule* RendererModule;
   void* TurboJpegLibraryHandle;
   void* LibUsbLibraryHandle;
-  libusb_context* LibUsb;
 
 #if PLATFORM_WINDOWS
   TRefCountPtr<D3D11Bridge>	pD3D11Bridge;

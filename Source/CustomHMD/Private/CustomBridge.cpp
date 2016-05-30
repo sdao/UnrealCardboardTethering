@@ -7,9 +7,7 @@
 
 #if PLATFORM_WINDOWS
 
-#include "AllowWindowsPlatformTypes.h"
 #include "CustomWindows.h"
-#include "HideWindowsPlatformTypes.h"
 
 FCustomHMD::D3D11Bridge::D3D11Bridge(FCustomHMD* plugin) :
   BridgeBaseImpl(plugin),
@@ -30,7 +28,7 @@ void FCustomHMD::D3D11Bridge::BeginRendering() {
 void FCustomHMD::D3D11Bridge::FinishRendering() {
   blah++;
   if (blah == 1000) {
-    DoImageStuff(Plugin->TurboJpegCompressor, RenderTargetTexture, &data, &size);
+    CustomWindows::DoImageStuff(Plugin->SharedLibraryInitParams, RenderTargetTexture, &data, &size);
   }
 }
 
