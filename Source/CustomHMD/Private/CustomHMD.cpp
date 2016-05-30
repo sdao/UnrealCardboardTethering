@@ -377,7 +377,8 @@ FCustomHMD::FCustomHMD() :
   LastSensorTime(-1.0),
   WindowMirrorMode(2),
   TurboJpegLibraryHandle(0),
-  TurboJpegCompressor(0)
+  TurboJpegCompressor(0),
+  LibUsb(nullptr)
 {
   static const FName RendererModuleName("Renderer");
   RendererModule = FModuleManager::GetModulePtr<IRendererModule>(RendererModuleName);
@@ -394,31 +395,16 @@ FCustomHMD::FCustomHMD() :
   FString LibraryPath;
 #if PLATFORM_WINDOWS
   LibraryPath = FPaths::Combine(*BaseDir, TEXT("Binaries/ThirdParty/turbojpeg/Win64/turbojpeg.dll"));
-
   TurboJpegLibraryHandle = !LibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*LibraryPath) : nullptr;
 
-  // Looks like dialogs don't appear in this method, even if it works. Oops.
-  if (TurboJpegLibraryHandle) {
-    // Call the test function in the third party library that opens a message box
-    UE_LOG(LogTemp, Warning, TEXT("Found it!"));
-    TurboJpegCompressor = tjInitCompress();
-    UE_LOG(LogTemp, Warning, TEXT("jpeg compressor handle %d"), TurboJpegCompressor);
-  } else
-#endif // PLATFORM_WINDOWS
-  {
-    FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ThirdPartyLibraryError", "Failed to load example third party library"));
-  }
-
-#if PLATFORM_WINDOWS
   LibraryPath = FPaths::Combine(*BaseDir, TEXT("Binaries/ThirdParty/libusb/Win64/libusb-1.0.dll"));
-
   LibUsbLibraryHandle = !LibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*LibraryPath) : nullptr;
 
-  // Looks like dialogs don't appear in this method, even if it works. Oops.
-  if (LibUsbLibraryHandle) {
-    // Call the test function in the third party library that opens a message box
-    UE_LOG(LogTemp, Warning, TEXT("Found usb!"));
+  if (TurboJpegLibraryHandle && LibUsbLibraryHandle) {
+    UE_LOG(LogTemp, Warning, TEXT("Found them!"));
     libusb_init(&LibUsb);
+    TurboJpegCompressor = tjInitCompress();
+    UE_LOG(LogTemp, Warning, TEXT("libusb %d, turbojpeg %d"), LibUsb, TurboJpegCompressor);
   } else
 #endif // PLATFORM_WINDOWS
   {
@@ -428,8 +414,11 @@ FCustomHMD::FCustomHMD() :
 
 FCustomHMD::~FCustomHMD()
 {
-  tjDestroy(TurboJpegCompressor);
   libusb_exit(LibUsb);
+  LibUsb = nullptr;
+  tjDestroy(TurboJpegCompressor);
+  TurboJpegCompressor = nullptr;
+
   FPlatformProcess::FreeDllHandle(TurboJpegLibraryHandle);
   TurboJpegLibraryHandle = nullptr;
   FPlatformProcess::FreeDllHandle(LibUsbLibraryHandle);

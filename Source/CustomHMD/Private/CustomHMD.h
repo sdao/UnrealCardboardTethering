@@ -138,6 +138,7 @@ public:
     ID3D11Texture2D* RenderTargetTexture = NULL;
     uint8_t* data;
     size_t size;
+    int blah;
   };
 #endif // PLATFORM_WINDOWS
 
@@ -153,6 +154,8 @@ public:
 	/** @return	True if the HMD was initialized OK */
 	bool IsInitialized() const;
 
+  tjhandle TurboJpegCompressor;
+
 private:
 
 	FQuat					CurHmdOrientation;
@@ -166,7 +169,6 @@ private:
   IRendererModule* RendererModule;
   void* TurboJpegLibraryHandle;
   void* LibUsbLibraryHandle;
-  tjhandle TurboJpegCompressor;
   libusb_context* LibUsb;
 
 #if PLATFORM_WINDOWS

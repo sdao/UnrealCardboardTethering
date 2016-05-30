@@ -15,7 +15,8 @@ FCustomHMD::D3D11Bridge::D3D11Bridge(FCustomHMD* plugin) :
   BridgeBaseImpl(plugin),
   RenderTargetTexture(nullptr),
   data(nullptr),
-  size(0) {}
+  size(0),
+  blah(0) {}
 
 void FCustomHMD::D3D11Bridge::BeginRendering() {
   check(IsInRenderingThread());
@@ -27,7 +28,10 @@ void FCustomHMD::D3D11Bridge::BeginRendering() {
 }
 
 void FCustomHMD::D3D11Bridge::FinishRendering() {
-  DoImageStuff(RenderTargetTexture, &data, &size);
+  blah++;
+  if (blah == 1000) {
+    DoImageStuff(Plugin->TurboJpegCompressor, RenderTargetTexture, &data, &size);
+  }
 }
 
 void FCustomHMD::D3D11Bridge::Reset() {}

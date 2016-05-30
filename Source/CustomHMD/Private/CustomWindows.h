@@ -4,6 +4,8 @@
 #include <d3d11.h>
 #include <stdint.h>
 #include <algorithm>
+#include <fstream>
+#include "turbojpeg.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -277,7 +279,7 @@ size_t ComputeScanlines(DXGI_FORMAT fmt, size_t height) {
 
 /** End code taken from DirectXTex */
 
-void DoImageStuff(ID3D11Texture2D* source, uint8_t** data, size_t* size) {
+void DoImageStuff(tjhandle turboJpeg, ID3D11Texture2D* source, uint8_t** data, size_t* size) {
   ComPtr<ID3D11Device> device;
   source->GetDevice(&device);
 
@@ -335,6 +337,8 @@ void DoImageStuff(ID3D11Texture2D* source, uint8_t** data, size_t* size) {
     *data = new uint8_t[slicePitch];
     *size = slicePitch;
   }
+
+  // TODO: never deleted!
   uint8_t* dptr = *data;
 
   // Source row pitch should be >= dest row pitch (source might have padding).
@@ -344,6 +348,19 @@ void DoImageStuff(ID3D11Texture2D* source, uint8_t** data, size_t* size) {
     sptr += mapped.RowPitch;
     dptr += rowPitch;
   }
+
+  // TODO: check actual format (90 = DXGI_FORMAT_B8G8R8A8_TYPELESS)!
+  unsigned char *outBuf = nullptr;
+  unsigned long outSize = 0;
+  int status = tjCompress2(turboJpeg, *data, desc.Width, rowPitch, desc.Height, TJPF_BGRX, &outBuf, &outSize, TJSAMP_444, 100, 0);
+  UE_LOG(LogTemp, Warning, TEXT("image status %d, format %d"), status, (int) desc.Format);
+
+  {
+    std::ofstream file("C:\\Users\\Steve\\Downloads\\example.jpeg", std::ios::binary);
+    file.write(reinterpret_cast<char*>(outBuf), outSize);
+  }
+
+  tjFree(outBuf);
 
   context->Unmap(staging.Get(), 0);
 }
