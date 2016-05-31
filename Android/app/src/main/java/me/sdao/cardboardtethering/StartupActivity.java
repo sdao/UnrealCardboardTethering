@@ -18,7 +18,6 @@ public class StartupActivity extends AppCompatActivity {
     private static final String ACTION_USB_PERMISSION =
             "me.sdao.cardboardtethering.USB_PERMISSION";
 
-    private boolean mReturningFromViewer = false;
     private PendingIntent mPermissionIntent;
     private boolean mReceiverRegistered = false;
     private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
@@ -63,12 +62,10 @@ public class StartupActivity extends AppCompatActivity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        if (!mReturningFromViewer) {
-            if (intent != null) {
-                UsbAccessory accessory = intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
-                if (accessory != null) {
-                    requestUsbPermission();
-                }
+        if (intent != null) {
+            UsbAccessory accessory = intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
+            if (accessory != null) {
+                requestUsbPermission();
             }
         }
     }
@@ -105,7 +102,6 @@ public class StartupActivity extends AppCompatActivity {
                 showInfoDialog("USB error", "The USB connection failed (IO read error).");
                 break;
         }
-        mReturningFromViewer = true;
     }
 
     private void requestUsbPermission() {

@@ -462,7 +462,7 @@ bool MayaUsbDevice::beginSendLoop(std::function<void(int)> failureCallback) {
               &_jpegBuffer,
               &jpegBufferSizeUlong,
               TJSAMP_420,
-              100 /* quality 1 to 100 */,
+              50 /* quality 1 to 100 */,
               0);
             if (jpegStatus != 0) {
               error = STATUS_JPEG_ERROR + jpegStatus;
