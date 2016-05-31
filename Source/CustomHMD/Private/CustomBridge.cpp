@@ -31,6 +31,7 @@ void FCustomHMD::D3D11Bridge::FinishRendering() {
     CustomWindows::DoImageStuff(Plugin->SharedLibraryInitParams, RenderTargetTexture, &data, &size);
   }*/
 
+  FScopeLock lock(&Plugin->ActiveUsbDeviceMutex);
   if (Plugin->ActiveUsbDevice.IsValid() && Plugin->ActiveUsbDevice->isSending()) {
     Plugin->ActiveUsbDevice->sendImage(RenderTargetTexture);
   }

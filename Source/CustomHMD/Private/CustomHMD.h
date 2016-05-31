@@ -154,6 +154,7 @@ public:
 	bool IsInitialized() const;
 
   TSharedPtr<LibraryInitParams> SharedLibraryInitParams;
+  FCriticalSection ActiveUsbDeviceMutex;
   TSharedPtr<MayaUsbDevice> ActiveUsbDevice;
 
 private:
@@ -176,6 +177,7 @@ private:
 
 	void GetCurrentPose(FQuat& CurrentOrientation);
   void ConnectUsb();
+  void DisconnectUsb();
   void FinishHandshake();
 };
 

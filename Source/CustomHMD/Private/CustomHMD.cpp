@@ -174,6 +174,9 @@ bool FCustomHMD::Exec( UWorld* InWorld, const TCHAR* Cmd, FOutputDevice& Ar )
     if (FParse::Command(&Cmd, TEXT("CONNECT"))) {
       ConnectUsb();
       return true;
+    } else if (FParse::Command(&Cmd, TEXT("DISCONNECT"))) {
+      DisconnectUsb();
+      return true;
     }
   }
 	return false;
@@ -483,25 +486,35 @@ void FCustomHMD::ConnectUsb() {
   TSharedPtr<MayaUsbDevice> realDevice;
   status = MayaUsbDevice::create(&realDevice, SharedLibraryInitParams);
   if (!status) {
-    ActiveUsbDevice = realDevice;
     UE_LOG(LogTemp, Warning, TEXT("CONNECTED!"));
+
+    FScopeLock lock(&ActiveUsbDeviceMutex);
+    ActiveUsbDevice = realDevice;
     ActiveUsbDevice->waitHandshakeAsync([this](bool success) {
       if (success) {
         FinishHandshake();
       } else {
-        UE_LOG(LogTemp, Warning, TEXT("HANDSHAKE ERROR"));
+        FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("UsbHandshakeFailed", "USB handshake failure."));
       }
     });
     return;
   }
 
-  UE_LOG(LogTemp, Warning, TEXT("COULD NOT CONNECT"));
+  FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("UsbNoDevice", "Could not find the USB device."));
+}
+
+void FCustomHMD::DisconnectUsb() {
+  FScopeLock lock(&ActiveUsbDeviceMutex);
+  ActiveUsbDevice = nullptr;
 }
 
 void FCustomHMD::FinishHandshake() {
+  FScopeLock lock(&ActiveUsbDeviceMutex);
+
   // Set up the send loop.
   ActiveUsbDevice->beginSendLoop([this]() {
-    UE_LOG(LogTemp, Warning, TEXT("SEND FAILED!"));
+    FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("UsbConnectionFailed", "The USB connection failed."));
+    ActiveUsbDevice = nullptr;
   });
 
   // Set up the receive loop.
