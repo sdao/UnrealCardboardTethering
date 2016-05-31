@@ -283,7 +283,7 @@ size_t CustomWindows::ComputeScanlines(DXGI_FORMAT fmt, size_t height) {
 
 /** End code taken from DirectXTex */
 
-void CustomWindows::DoImageStuff(std::shared_ptr<LibraryInitParams>& libraryParams, ID3D11Texture2D* source, uint8_t** data, size_t* size) {
+void CustomWindows::DoImageStuff(TSharedPtr<LibraryInitParams>& libraryParams, ID3D11Texture2D* source, uint8_t** data, size_t* size) {
   ComPtr<ID3D11Device> device;
   source->GetDevice(&device);
 

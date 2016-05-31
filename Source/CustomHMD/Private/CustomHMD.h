@@ -6,7 +6,7 @@
 #include "IHeadMountedDisplay.h"
 #include "SceneViewExtension.h"
 #include "LibraryInitParams.h"
-#include <memory>
+#include "MayaUsbDevice.h"
 
 #if PLATFORM_WINDOWS
 #include "AllowWindowsPlatformTypes.h"
@@ -153,7 +153,8 @@ public:
 	/** @return	True if the HMD was initialized OK */
 	bool IsInitialized() const;
 
-  std::shared_ptr<LibraryInitParams> SharedLibraryInitParams;
+  TSharedPtr<LibraryInitParams> SharedLibraryInitParams;
+  TSharedPtr<MayaUsbDevice> ActiveUsbDevice;
 
 private:
 
@@ -174,6 +175,8 @@ private:
 #endif
 
 	void GetCurrentPose(FQuat& CurrentOrientation);
+  void ConnectUsb();
+  void FinishHandshake();
 };
 
 

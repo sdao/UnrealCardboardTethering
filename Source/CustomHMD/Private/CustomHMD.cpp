@@ -170,6 +170,12 @@ bool FCustomHMD::IsChromaAbCorrectionEnabled() const
 
 bool FCustomHMD::Exec( UWorld* InWorld, const TCHAR* Cmd, FOutputDevice& Ar )
 {
+  if (FParse::Command(&Cmd, TEXT("HMD"))) {
+    if (FParse::Command(&Cmd, TEXT("CONNECT"))) {
+      ConnectUsb();
+      return true;
+    }
+  }
 	return false;
 }
 
@@ -394,7 +400,7 @@ FCustomHMD::FCustomHMD() :
 
   if (TurboJpegLibraryHandle && LibUsbLibraryHandle) {
     UE_LOG(LogTemp, Warning, TEXT("Found them!"));
-    SharedLibraryInitParams = std::make_shared<LibraryInitParams>();
+    SharedLibraryInitParams = TSharedPtr<LibraryInitParams>(new LibraryInitParams());
   } else
 #endif // PLATFORM_WINDOWS
   {
@@ -461,4 +467,45 @@ bool FCustomHMD::NeedReAllocateViewportRenderTarget(const FViewport& Viewport) {
     }
   }
   return false;
+}
+
+void FCustomHMD::ConnectUsb() {
+  // Try to find the non-accessory device (hardcoded Nexus 4).
+  TSharedPtr<MayaUsbDevice> tempDevice;
+  int status = MayaUsbDevice::create(&tempDevice, SharedLibraryInitParams, 0x18d1, 0x4ee2);
+  if (!status) {
+    tempDevice->convertToAccessory();
+
+    // Wait for device re-renumeration.
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+
+  TSharedPtr<MayaUsbDevice> realDevice;
+  status = MayaUsbDevice::create(&realDevice, SharedLibraryInitParams);
+  if (!status) {
+    ActiveUsbDevice = realDevice;
+    UE_LOG(LogTemp, Warning, TEXT("CONNECTED!"));
+    ActiveUsbDevice->waitHandshakeAsync([this](bool success) {
+      if (success) {
+        FinishHandshake();
+      } else {
+        UE_LOG(LogTemp, Warning, TEXT("HANDSHAKE ERROR"));
+      }
+    });
+    return;
+  }
+
+  UE_LOG(LogTemp, Warning, TEXT("COULD NOT CONNECT"));
+}
+
+void FCustomHMD::FinishHandshake() {
+  // Set up the send loop.
+  ActiveUsbDevice->beginSendLoop([this]() {
+    UE_LOG(LogTemp, Warning, TEXT("SEND FAILED!"));
+  });
+
+  // Set up the receive loop.
+  ActiveUsbDevice->beginReadLoop([this](const unsigned char* data) {
+    // Don't do anything right now.
+  }, 4 * sizeof(float));
 }

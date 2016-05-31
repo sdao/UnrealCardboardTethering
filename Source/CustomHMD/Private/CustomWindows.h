@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-#include <memory>
 #include "LibraryInitParams.h"
 
 #include "AllowWindowsPlatformTypes.h"
@@ -15,5 +14,5 @@ class CustomWindows {
   static size_t ComputeScanlines(DXGI_FORMAT fmt, size_t height);
 
 public:
-  static void DoImageStuff(std::shared_ptr<LibraryInitParams>& libraryParams, ID3D11Texture2D* source, uint8_t** data, size_t* size);
+  static void DoImageStuff(TSharedPtr<LibraryInitParams>& libraryParams, ID3D11Texture2D* source, uint8_t** data, size_t* size);
 };

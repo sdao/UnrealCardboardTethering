@@ -26,9 +26,13 @@ void FCustomHMD::D3D11Bridge::BeginRendering() {
 }
 
 void FCustomHMD::D3D11Bridge::FinishRendering() {
-  blah++;
+  /*blah++;
   if (blah == 1000) {
     CustomWindows::DoImageStuff(Plugin->SharedLibraryInitParams, RenderTargetTexture, &data, &size);
+  }*/
+
+  if (Plugin->ActiveUsbDevice.IsValid() && Plugin->ActiveUsbDevice->isSending()) {
+    Plugin->ActiveUsbDevice->sendImage(RenderTargetTexture);
   }
 }
 
