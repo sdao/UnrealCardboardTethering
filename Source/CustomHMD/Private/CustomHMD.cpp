@@ -409,6 +409,8 @@ FCustomHMD::FCustomHMD() :
   {
     FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ThirdPartyLibraryError", "Failed to load example third party library"));
   }
+
+  UE_LOG(LogTemp, Warning, TEXT("DONE CREATING!"));
 }
 
 FCustomHMD::~FCustomHMD()
@@ -512,8 +514,8 @@ void FCustomHMD::FinishHandshake() {
   FScopeLock lock(&ActiveUsbDeviceMutex);
 
   // Set up the send loop.
-  ActiveUsbDevice->beginSendLoop([this]() {
-    FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("UsbConnectionFailed", "The USB connection failed."));
+  ActiveUsbDevice->beginSendLoop([this](int reason) {
+    FMessageDialog::Open(EAppMsgType::Ok, FText::Format(LOCTEXT("UsbConnectionFailed", "The USB connection failed ({0})."), FText::AsNumber(reason)));
     ActiveUsbDevice = nullptr;
   });
 

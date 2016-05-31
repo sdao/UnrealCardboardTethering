@@ -24,7 +24,8 @@
 
         </activity>
         <activity
-            android:name=".StartupActivity">
+            android:name=".StartupActivity"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />

@@ -54,13 +54,16 @@ public class StartupActivity extends AppCompatActivity {
                 requestUsbPermission();
             }
         });
+
+        if (getIntent() != null) {
+            onNewIntent(getIntent());
+        }
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
         if (!mReturningFromViewer) {
-            Intent intent = getIntent();
             if (intent != null) {
                 UsbAccessory accessory = intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
                 if (accessory != null) {
@@ -83,6 +86,9 @@ public class StartupActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         switch (resultCode) {
+            case MainActivity.STATUS_OK:
+                showInfoDialog("Connection ended", "The connection ended successfully.");
+                break;
             case MainActivity.STATUS_NOT_FOUND_ERROR:
                 showInfoDialog("USB error", "Could not find the USB device");
                 break;
@@ -92,11 +98,11 @@ public class StartupActivity extends AppCompatActivity {
             case MainActivity.STATUS_HANDSHAKE_ERROR:
                 showInfoDialog("USB error", "USB handshake failure.");
                 break;
-            case MainActivity.STATUS_IO_ERROR:
-                showInfoDialog("USB error", "The USB connection failed.");
+            case MainActivity.STATUS_WRITE_ERROR:
+                showInfoDialog("USB error", "The USB connection failed (IO write error).");
                 break;
-            case MainActivity.STATUS_CONNECTION_ENDED:
-                showInfoDialog("Connection ended", "The connection ended successfully.");
+            case MainActivity.STATUS_READ_ERROR:
+                showInfoDialog("USB error", "The USB connection failed (IO read error).");
                 break;
         }
         mReturningFromViewer = true;

@@ -107,6 +107,8 @@ public:
   static constexpr int STATUS_RECEIVE_ERROR = -6;
   static constexpr int STATUS_SEND_ERROR = -7;
   static constexpr int STATUS_BAD_PROTOCOL_VERSION = -8;
+  static constexpr int STATUS_LIBUSB_ERROR = -1000;
+  static constexpr int STATUS_JPEG_ERROR = -2000;
 
   static int create(TSharedPtr<MayaUsbDevice>* out,
     TSharedPtr<LibraryInitParams>& initParams,
@@ -121,7 +123,7 @@ public:
   bool isHandshakeComplete();
   bool beginReadLoop(std::function<void(const unsigned char*)> callback,
       size_t readFrame);
-  bool beginSendLoop(std::function<void()> failureCallback);
+  bool beginSendLoop(std::function<void(int)> failureCallback);
   bool isSending();
   bool sendImage(ID3D11Texture2D* source);
   static bool supportsRasterFormat(DXGI_FORMAT format);

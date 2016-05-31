@@ -413,7 +413,7 @@ bool MayaUsbDevice::beginReadLoop(
   return true;
 }
 
-bool MayaUsbDevice::beginSendLoop(std::function<void()> failureCallback) {
+bool MayaUsbDevice::beginSendLoop(std::function<void(int)> failureCallback) {
   if (_outEndpoint == 0) {
     return false;
   }
@@ -427,8 +427,9 @@ bool MayaUsbDevice::beginSendLoop(std::function<void()> failureCallback) {
 
   _sendWorker = std::make_shared<InterruptibleThread>(
     [=](const InterruptibleThread::SharedAtomicBool cancel) {
+      // TODO: add code for retrying when connection is flaky.
       while (true) {
-        bool error = false;
+        int error = STATUS_OK;
 
         {
           std::unique_lock<std::mutex> lock(_sendMutex);
@@ -452,7 +453,7 @@ bool MayaUsbDevice::beginSendLoop(std::function<void()> failureCallback) {
             break;
           } else {
             unsigned long jpegBufferSizeUlong;
-            tjCompress2(_initParams->TurboJpegCompressor,
+            int jpegStatus = tjCompress2(_initParams->TurboJpegCompressor,
               _rgbImageBuffer,
               _jpegBufferWidth,
               _jpegBufferWidthPitch,
@@ -463,38 +464,41 @@ bool MayaUsbDevice::beginSendLoop(std::function<void()> failureCallback) {
               TJSAMP_420,
               100 /* quality 1 to 100 */,
               0);
-
-            _jpegBufferSize = jpegBufferSizeUlong;
-            int written = 0;
-
-            // Write size of JPEG (32-bit int).
-            uint32_t header = EndianUtils::nativeToBig(
-              (uint32_t)_jpegBufferSize);
-
-            libusb_bulk_transfer(_hnd,
-              _outEndpoint,
-              reinterpret_cast<unsigned char*>(&header),
-              sizeof(header),
-              &written,
-              500);
-            if (written < sizeof(header)) {
-              error = true;
+            if (jpegStatus != 0) {
+              error = STATUS_JPEG_ERROR + jpegStatus;
             } else {
-              // Write JPEG in BUFFER_LEN chunks.
-              for (int i = 0; i < _jpegBufferSize; i += BUFFER_LEN) {
-                written = 0;
+              _jpegBufferSize = jpegBufferSizeUlong;
+              int written = 0;
 
-                int chunk = std::min(BUFFER_LEN, _jpegBufferSize - i);
-                libusb_bulk_transfer(_hnd,
-                  _outEndpoint,
-                  _jpegBuffer + i,
-                  chunk,
-                  &written,
-                  500);
+              // Write size of JPEG (32-bit int).
+              uint32_t header = EndianUtils::nativeToBig(
+                (uint32_t)_jpegBufferSize);
 
-                if (written < chunk) {
-                  error = true;
-                  break;
+              int status = libusb_bulk_transfer(_hnd,
+                _outEndpoint,
+                reinterpret_cast<unsigned char*>(&header),
+                sizeof(header),
+                &written,
+                500);
+              if (written < sizeof(header)) {
+                error = STATUS_LIBUSB_ERROR + status;
+              } else {
+                // Write JPEG in BUFFER_LEN chunks.
+                for (int i = 0; i < _jpegBufferSize; i += BUFFER_LEN) {
+                  written = 0;
+
+                  int chunk = std::min(BUFFER_LEN, _jpegBufferSize - i);
+                  int status = libusb_bulk_transfer(_hnd,
+                    _outEndpoint,
+                    _jpegBuffer + i,
+                    chunk,
+                    &written,
+                    500);
+
+                  if (written < chunk) {
+                    error = STATUS_LIBUSB_ERROR + status;
+                    break;
+                  }
                 }
               }
             }
@@ -503,7 +507,7 @@ bool MayaUsbDevice::beginSendLoop(std::function<void()> failureCallback) {
 
         if (error) {
           // Only signal on a send error.
-          failureCallback();
+          failureCallback(error);
           break;
         } else {
           // Only reset send flag if successful.

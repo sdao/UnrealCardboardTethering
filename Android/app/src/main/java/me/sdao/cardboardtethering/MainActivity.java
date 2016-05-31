@@ -36,11 +36,12 @@ import javax.microedition.khronos.egl.EGLConfig;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final int STATUS_NOT_FOUND_ERROR = 0;
-    public static final int STATUS_INITIALIZE_DEVICE_ERROR = 1;
-    public static final int STATUS_HANDSHAKE_ERROR = 2;
-    public static final int STATUS_IO_ERROR = 3;
-    public static final int STATUS_CONNECTION_ENDED = 4;
+    public static final int STATUS_OK = 0;
+    public static final int STATUS_NOT_FOUND_ERROR = 1;
+    public static final int STATUS_INITIALIZE_DEVICE_ERROR = 2;
+    public static final int STATUS_HANDSHAKE_ERROR = 3;
+    public static final int STATUS_WRITE_ERROR = 4;
+    public static final int STATUS_READ_ERROR = 5;
 
     final private Object mBitmapLock = new Object();
     private Bitmap mBitmap = null;
@@ -155,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
 
         ThreadCallback callback = new ThreadCallback() {
             @Override
-            public void onCompleted(boolean success, Exception e) {
+            public void onCompleted(boolean success, Exception e, int code) {
                 try {
                     if (mParcelFileDescriptor != null) {
                         mParcelFileDescriptor.close();
@@ -163,12 +164,10 @@ public class MainActivity extends AppCompatActivity {
                     }
                 } catch (IOException f) {}
 
-                if (success) {
-                    setResult(STATUS_CONNECTION_ENDED);
-                    finish();
-                } else {
-                    setResult(STATUS_IO_ERROR);
-                    finish();
+                setResult(code);
+                finish();
+
+                if (!success) {
                     Log.d("THREADS", "IO error", e);
                 }
             }
@@ -224,14 +223,23 @@ public class MainActivity extends AppCompatActivity {
 
                         dis.readFully(buffer, 0, size);
 
-                        backBitmap = BitmapFactory.decodeByteArray(buffer, 0, size, options);
-
-                        synchronized (mBitmapLock) {
-                            Bitmap temp = mBitmap;
-                            mBitmap = backBitmap;
-                            mBitmapNew = true;
-                            backBitmap = temp;
-                            options.inBitmap = temp;
+                        try {
+                            backBitmap = BitmapFactory.decodeByteArray(buffer, 0, size, options);
+                            synchronized (mBitmapLock) {
+                                Bitmap temp = mBitmap;
+                                mBitmap = backBitmap;
+                                mBitmapNew = true;
+                                backBitmap = temp;
+                                options.inBitmap = temp;
+                            }
+                        } catch (IllegalArgumentException ex) {
+                            // Skip this frame; the bitmap changed size.
+                            synchronized (mBitmapLock) {
+                                mBitmap = null;
+                                mBitmapNew = false;
+                                backBitmap = null;
+                                options.inBitmap = null;
+                            }
                         }
                     }
 
@@ -240,7 +248,7 @@ public class MainActivity extends AppCompatActivity {
                         MainActivity.this.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                callback.onCompleted(true, null);
+                                callback.onCompleted(true, null, STATUS_OK);
                             }
                         });
                     }
@@ -248,7 +256,7 @@ public class MainActivity extends AppCompatActivity {
                     MainActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            callback.onCompleted(false, e);
+                            callback.onCompleted(false, e, STATUS_READ_ERROR);
                         }
                     });
                 } finally {
@@ -295,7 +303,7 @@ public class MainActivity extends AppCompatActivity {
                     MainActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            callback.onCompleted(false, e);
+                            callback.onCompleted(false, e, STATUS_WRITE_ERROR);
                         }
                     });
                 }
@@ -307,6 +315,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private interface ThreadCallback {
-        void onCompleted(boolean success, Exception e);
+        void onCompleted(boolean success, Exception e, int code);
     }
 }
