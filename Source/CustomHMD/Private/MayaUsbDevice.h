@@ -121,7 +121,7 @@ public:
   int convertToAccessory();
   bool waitHandshakeAsync(std::function<void(bool)> callback);
   bool isHandshakeComplete();
-  bool beginReadLoop(std::function<void(const unsigned char*)> callback,
+  bool beginReadLoop(std::function<void(const unsigned char*, int)> callback,
       size_t readFrame);
   bool beginSendLoop(std::function<void(int)> failureCallback);
   bool isSending();

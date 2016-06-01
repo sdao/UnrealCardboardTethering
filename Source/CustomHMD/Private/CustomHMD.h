@@ -177,7 +177,7 @@ private:
 
 	void GetCurrentPose(FQuat& CurrentOrientation);
   void ConnectUsb();
-  void DisconnectUsb();
+  void DisconnectUsb(int reason);
   void FinishHandshake();
 };
 

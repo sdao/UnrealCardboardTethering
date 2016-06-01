@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbAccessory;
 import android.hardware.usb.UsbManager;
+import android.os.Handler;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -41,6 +42,8 @@ public class StartupActivity extends AppCompatActivity {
         }
     };
 
+    private boolean mReturning = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,9 +56,16 @@ public class StartupActivity extends AppCompatActivity {
                 requestUsbPermission();
             }
         });
+    }
 
-        if (getIntent() != null) {
-            onNewIntent(getIntent());
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!mReturning) {
+            if (getIntent() != null) {
+                mReturning = true;
+                onNewIntent(getIntent());
+            }
         }
     }
 
@@ -82,6 +92,7 @@ public class StartupActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        mReturning = true;
         switch (resultCode) {
             case MainActivity.STATUS_OK:
                 showInfoDialog("Connection ended", "The connection ended successfully.");
@@ -96,10 +107,14 @@ public class StartupActivity extends AppCompatActivity {
                 showInfoDialog("USB error", "USB handshake failure.");
                 break;
             case MainActivity.STATUS_WRITE_ERROR:
-                showInfoDialog("USB error", "The USB connection failed (IO write error).");
+                showInfoDialog("USB error", "USB connection failed (during write). " +
+                        "Most likely the physical connection failed, " +
+                        "e.g. the cable was disconnected.");
                 break;
             case MainActivity.STATUS_READ_ERROR:
-                showInfoDialog("USB error", "The USB connection failed (IO read error).");
+                showInfoDialog("USB error", "USB connection failed (during read). " +
+                        "Most likely the physical connection failed, " +
+                        "e.g. the cable was disconnected.");
                 break;
         }
     }

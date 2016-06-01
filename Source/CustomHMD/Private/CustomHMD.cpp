@@ -175,7 +175,7 @@ bool FCustomHMD::Exec( UWorld* InWorld, const TCHAR* Cmd, FOutputDevice& Ar )
       ConnectUsb();
       return true;
     } else if (FParse::Command(&Cmd, TEXT("DISCONNECT"))) {
-      DisconnectUsb();
+      DisconnectUsb(0);
       return true;
     }
   }
@@ -505,9 +505,19 @@ void FCustomHMD::ConnectUsb() {
   FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("UsbNoDevice", "Could not find the USB device."));
 }
 
-void FCustomHMD::DisconnectUsb() {
+void FCustomHMD::DisconnectUsb(int reason) {
   FScopeLock lock(&ActiveUsbDeviceMutex);
+  if (!ActiveUsbDevice.IsValid()) {
+    UE_LOG(LogTemp, Warning, TEXT("Already disconnected"));
+    return;
+  }
+
   ActiveUsbDevice = nullptr;
+  UE_LOG(LogTemp, Warning, TEXT("DISCONNECTED!"));
+
+  if (reason != 0) {
+    FMessageDialog::Open(EAppMsgType::Ok, FText::Format(LOCTEXT("UsbConnectionFailed", "The USB connection failed ({0}). Most likely the physical connection failed, e.g. the cable was disconnected."), FText::AsNumber(reason)));
+  }
 }
 
 void FCustomHMD::FinishHandshake() {
@@ -515,12 +525,15 @@ void FCustomHMD::FinishHandshake() {
 
   // Set up the send loop.
   ActiveUsbDevice->beginSendLoop([this](int reason) {
-    FMessageDialog::Open(EAppMsgType::Ok, FText::Format(LOCTEXT("UsbConnectionFailed", "The USB connection failed ({0})."), FText::AsNumber(reason)));
-    ActiveUsbDevice = nullptr;
+    DisconnectUsb(reason);
   });
 
   // Set up the receive loop.
-  ActiveUsbDevice->beginReadLoop([this](const unsigned char* data) {
-    // Don't do anything right now.
+  ActiveUsbDevice->beginReadLoop([this](const unsigned char* data, int reason) {
+    if (reason) {
+      DisconnectUsb(reason);
+    } else {
+      // Don't do anything right now.
+    }
   }, 4 * sizeof(float));
 }

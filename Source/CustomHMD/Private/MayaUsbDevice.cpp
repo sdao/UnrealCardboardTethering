@@ -365,7 +365,7 @@ bool MayaUsbDevice::isHandshakeComplete() {
 }
 
 bool MayaUsbDevice::beginReadLoop(
-    std::function<void(const unsigned char*)> callback,
+    std::function<void(const unsigned char*, int)> callback,
     size_t readFrame) {
   if (_inEndpoint == 0) {
     return false;
@@ -394,7 +394,7 @@ bool MayaUsbDevice::beginReadLoop(
             &read,
             500);
         if (status == 0) {
-          callback(inputBuffer);
+          callback(inputBuffer, STATUS_OK);
         }
       }
       delete[] inputBuffer;
@@ -402,7 +402,7 @@ bool MayaUsbDevice::beginReadLoop(
       if (!cancelled) {
         // Error if loop ended but not cancelled.
         std::cout << "Status in beginReadLoop=" << status << std::endl;
-        callback(nullptr);
+        callback(nullptr, STATUS_LIBUSB_ERROR + status);
       }
 
       std::cout << "Read loop ended" << std::endl;
