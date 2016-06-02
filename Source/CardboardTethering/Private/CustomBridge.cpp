@@ -1,5 +1,5 @@
-#include "CustomHMDPrivatePCH.h"
-#include "CustomHMD.h"
+#include "CardboardTetheringPrivatePCH.h"
+#include "CardboardTethering.h"
 
 #include "RendererPrivate.h"
 #include "ScenePrivate.h"
@@ -9,14 +9,14 @@
 
 #include "CustomWindows.h"
 
-FCustomHMD::D3D11Bridge::D3D11Bridge(FCustomHMD* plugin) :
+FCardboardTethering::D3D11Bridge::D3D11Bridge(FCardboardTethering* plugin) :
   BridgeBaseImpl(plugin),
   RenderTargetTexture(nullptr),
   data(nullptr),
   size(0),
   blah(0) {}
 
-void FCustomHMD::D3D11Bridge::BeginRendering() {
+void FCardboardTethering::D3D11Bridge::BeginRendering() {
   check(IsInRenderingThread());
 
   static bool Inited = false;
@@ -25,7 +25,7 @@ void FCustomHMD::D3D11Bridge::BeginRendering() {
   }
 }
 
-void FCustomHMD::D3D11Bridge::FinishRendering() {
+void FCardboardTethering::D3D11Bridge::FinishRendering() {
   /*blah++;
   if (blah == 1000) {
     CustomWindows::DoImageStuff(Plugin->SharedLibraryInitParams, RenderTargetTexture, &data, &size);
@@ -37,9 +37,9 @@ void FCustomHMD::D3D11Bridge::FinishRendering() {
   }
 }
 
-void FCustomHMD::D3D11Bridge::Reset() {}
+void FCardboardTethering::D3D11Bridge::Reset() {}
 
-void FCustomHMD::D3D11Bridge::UpdateViewport(const FViewport& Viewport, FRHIViewport* InViewportRHI) {
+void FCardboardTethering::D3D11Bridge::UpdateViewport(const FViewport& Viewport, FRHIViewport* InViewportRHI) {
   check(IsInGameThread());
   check(InViewportRHI);
 
@@ -57,9 +57,9 @@ void FCustomHMD::D3D11Bridge::UpdateViewport(const FViewport& Viewport, FRHIView
 }
 
 
-void FCustomHMD::D3D11Bridge::OnBackBufferResize() {}
+void FCardboardTethering::D3D11Bridge::OnBackBufferResize() {}
 
-bool FCustomHMD::D3D11Bridge::Present(int& SyncInterval) {
+bool FCardboardTethering::D3D11Bridge::Present(int& SyncInterval) {
   check(IsInRenderingThread());
 
   FinishRendering();
@@ -67,7 +67,7 @@ bool FCustomHMD::D3D11Bridge::Present(int& SyncInterval) {
   return true;
 }
 
-void FCustomHMD::RenderTexture_RenderThread(FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef BackBuffer, FTexture2DRHIParamRef SrcTexture) const {
+void FCardboardTethering::RenderTexture_RenderThread(FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef BackBuffer, FTexture2DRHIParamRef SrcTexture) const {
   check(IsInRenderingThread());
 
   if (WindowMirrorMode == 0) {

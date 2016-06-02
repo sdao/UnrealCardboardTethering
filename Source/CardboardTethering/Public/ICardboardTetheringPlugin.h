@@ -9,7 +9,7 @@
  * The public interface to this module.  In most cases, this interface is only public to sibling modules 
  * within this plugin.
  */
-class ICustomHMDPlugin : public IHeadMountedDisplayModule
+class ICardboardTetheringPlugin : public IHeadMountedDisplayModule
 {
 
 public:
@@ -20,9 +20,9 @@ public:
 	 *
 	 * @return Returns singleton instance, loading the module on demand if needed
 	 */
-	static inline ICustomHMDPlugin& Get()
+	static inline ICardboardTetheringPlugin& Get()
 	{
-		return FModuleManager::LoadModuleChecked< ICustomHMDPlugin >( "CustomHMD" );
+		return FModuleManager::LoadModuleChecked< ICardboardTetheringPlugin >( "CardboardTethering" );
 	}
 
 	/**
@@ -32,6 +32,6 @@ public:
 	 */
 	static inline bool IsAvailable()
 	{
-		return FModuleManager::Get().IsModuleLoaded( "CustomHMD" );
+		return FModuleManager::Get().IsModuleLoaded( "CardboardTethering" );
 	}
 };
