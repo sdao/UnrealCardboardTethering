@@ -6,10 +6,10 @@
 #include "IHeadMountedDisplayModule.h"
 
 /**
- * The public interface to this module.  In most cases, this interface is only public to sibling modules
+ * The public interface to this module.  In most cases, this interface is only public to sibling modules 
  * within this plugin.
  */
-class ICardboardTetheringPlugin : public IHeadMountedDisplayModule
+class ICustomHMDPlugin : public IHeadMountedDisplayModule
 {
 
 public:
@@ -20,9 +20,9 @@ public:
 	 *
 	 * @return Returns singleton instance, loading the module on demand if needed
 	 */
-	static inline ICardboardTetheringPlugin& Get()
+	static inline ICustomHMDPlugin& Get()
 	{
-		return FModuleManager::LoadModuleChecked< ICardboardTetheringPlugin >( "CardboardTethering" );
+		return FModuleManager::LoadModuleChecked< ICustomHMDPlugin >( "CustomHMD" );
 	}
 
 	/**
@@ -32,6 +32,6 @@ public:
 	 */
 	static inline bool IsAvailable()
 	{
-		return FModuleManager::Get().IsModuleLoaded( "CardboardTethering" );
+		return FModuleManager::Get().IsModuleLoaded( "CustomHMD" );
 	}
 };

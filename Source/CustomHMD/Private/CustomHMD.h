@@ -1,7 +1,7 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
-#include "ICardboardTetheringPlugin.h"
+#include "ICustomHMDPlugin.h"
 #include "HeadMountedDisplay.h"
 #include "IHeadMountedDisplay.h"
 #include "SceneViewExtension.h"
@@ -17,7 +17,7 @@
 /**
  * Simple Head Mounted Display
  */
-class FCardboardTethering : public IHeadMountedDisplay, public ISceneViewExtension, public TSharedFromThis<FCardboardTethering, ESPMode::ThreadSafe>
+class FCustomHMD : public IHeadMountedDisplay, public ISceneViewExtension, public TSharedFromThis<FCustomHMD, ESPMode::ThreadSafe>
 {
 public:
 	/** IHeadMountedDisplay interface */
@@ -96,7 +96,7 @@ public:
 
   class BridgeBaseImpl : public FRHICustomPresent {
   public:
-    BridgeBaseImpl(FCardboardTethering* plugin) :
+    BridgeBaseImpl(FCustomHMD* plugin) :
       FRHICustomPresent(nullptr),
       Plugin(plugin),
       bNeedReinitRendererAPI(true),
@@ -112,7 +112,7 @@ public:
     virtual void Shutdown() = 0;
 
   protected:
-    FCardboardTethering* Plugin;
+    FCustomHMD* Plugin;
     bool bNeedReinitRendererAPI;
     bool bInitialized;
   };
@@ -120,7 +120,7 @@ public:
 #if PLATFORM_WINDOWS
   class D3D11Bridge : public BridgeBaseImpl {
   public:
-    D3D11Bridge(FCardboardTethering* plugin);
+    D3D11Bridge(FCustomHMD* plugin);
 
     virtual void OnBackBufferResize() override;
     virtual bool Present(int& SyncInterval) override;
@@ -145,10 +145,10 @@ public:
 
 public:
 	/** Constructor */
-	FCardboardTethering();
+	FCustomHMD();
 
 	/** Destructor */
-	virtual ~FCardboardTethering();
+	virtual ~FCustomHMD();
 
 	/** @return	True if the HMD was initialized OK */
 	bool IsInitialized() const;

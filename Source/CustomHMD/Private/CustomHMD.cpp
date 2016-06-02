@@ -1,61 +1,61 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "CardboardTetheringPrivatePCH.h"
-#include "CardboardTethering.h"
+#include "CustomHMDPrivatePCH.h"
+#include "CustomHMD.h"
 #include "RendererPrivate.h"
 #include "ScenePrivate.h"
 #include "IPluginManager.h"
 #include "PostProcess/PostProcessHMD.h"
 
 //---------------------------------------------------
-// Cardboard Tethering Plugin Implementation
+// CustomHMD Plugin Implementation
 //---------------------------------------------------
 
-#define LOCTEXT_NAMESPACE "FCardboardTethering"
+#define LOCTEXT_NAMESPACE "FCustomHMD"
 
-class FCardboardTetheringPlugin : public ICardboardTetheringPlugin
+class FCustomHMDPlugin : public ICustomHMDPlugin
 {
 	/** IHeadMountedDisplayModule implementation */
 	virtual TSharedPtr< class IHeadMountedDisplay, ESPMode::ThreadSafe > CreateHeadMountedDisplay() override;
 
 	FString GetModulePriorityKeyName() const override
 	{
-		return FString(TEXT("CardboardTethering"));
+		return FString(TEXT("CustomHMD"));
 	}
 };
 
-IMPLEMENT_MODULE( FCardboardTetheringPlugin, CardboardTethering )
+IMPLEMENT_MODULE( FCustomHMDPlugin, CustomHMD )
 
-TSharedPtr< class IHeadMountedDisplay, ESPMode::ThreadSafe > FCardboardTetheringPlugin::CreateHeadMountedDisplay()
+TSharedPtr< class IHeadMountedDisplay, ESPMode::ThreadSafe > FCustomHMDPlugin::CreateHeadMountedDisplay()
 {
-	TSharedPtr< FCardboardTethering, ESPMode::ThreadSafe > CardboardTethering( new FCardboardTethering() );
-	if( CardboardTethering->IsInitialized() )
+	TSharedPtr< FCustomHMD, ESPMode::ThreadSafe > CustomHMD( new FCustomHMD() );
+	if( CustomHMD->IsInitialized() )
 	{
-		return CardboardTethering;
+		return CustomHMD;
 	}
 	return NULL;
 }
 
 
 //---------------------------------------------------
-// Cardboard Tethering IHeadMountedDisplay Implementation
+// CustomHMD IHeadMountedDisplay Implementation
 //---------------------------------------------------
 
-bool FCardboardTethering::IsHMDEnabled() const
+bool FCustomHMD::IsHMDEnabled() const
 {
 	return true;
 }
 
-void FCardboardTethering::EnableHMD(bool enable)
+void FCustomHMD::EnableHMD(bool enable)
 {
 }
 
-EHMDDeviceType::Type FCardboardTethering::GetHMDDeviceType() const
+EHMDDeviceType::Type FCustomHMD::GetHMDDeviceType() const
 {
 	return EHMDDeviceType::DT_ES2GenericStereoMesh;
 }
 
-bool FCardboardTethering::GetHMDMonitorInfo(MonitorInfo& MonitorDesc)
+bool FCustomHMD::GetHMDMonitorInfo(MonitorInfo& MonitorDesc)
 {
 	MonitorDesc.MonitorName = "";
 	MonitorDesc.MonitorId = 0;
@@ -63,40 +63,40 @@ bool FCardboardTethering::GetHMDMonitorInfo(MonitorInfo& MonitorDesc)
 	return false;
 }
 
-void FCardboardTethering::GetFieldOfView(float& OutHFOVInDegrees, float& OutVFOVInDegrees) const
+void FCustomHMD::GetFieldOfView(float& OutHFOVInDegrees, float& OutVFOVInDegrees) const
 {
 	OutHFOVInDegrees = 0.0f;
 	OutVFOVInDegrees = 0.0f;
 }
 
-bool FCardboardTethering::DoesSupportPositionalTracking() const
+bool FCustomHMD::DoesSupportPositionalTracking() const
 {
 	return false;
 }
 
-bool FCardboardTethering::HasValidTrackingPosition()
+bool FCustomHMD::HasValidTrackingPosition()
 {
 	return false;
 }
 
-void FCardboardTethering::GetPositionalTrackingCameraProperties(FVector& OutOrigin, FQuat& OutOrientation, float& OutHFOV, float& OutVFOV, float& OutCameraDistance, float& OutNearPlane, float& OutFarPlane) const
+void FCustomHMD::GetPositionalTrackingCameraProperties(FVector& OutOrigin, FQuat& OutOrientation, float& OutHFOV, float& OutVFOV, float& OutCameraDistance, float& OutNearPlane, float& OutFarPlane) const
 {
 }
 
-void FCardboardTethering::RebaseObjectOrientationAndPosition(FVector& OutPosition, FQuat& OutOrientation) const
+void FCustomHMD::RebaseObjectOrientationAndPosition(FVector& OutPosition, FQuat& OutOrientation) const
 {
 }
 
-void FCardboardTethering::SetInterpupillaryDistance(float NewInterpupillaryDistance)
+void FCustomHMD::SetInterpupillaryDistance(float NewInterpupillaryDistance)
 {
 }
 
-float FCardboardTethering::GetInterpupillaryDistance() const
+float FCustomHMD::GetInterpupillaryDistance() const
 {
 	return 0.064f;
 }
 
-void FCardboardTethering::GetCurrentPose(FQuat& CurrentOrientation)
+void FCustomHMD::GetCurrentPose(FQuat& CurrentOrientation)
 {
 	// very basic.  no head model, no prediction, using debuglocalplayer
 	ULocalPlayer* Player = GEngine->GetDebugLocalPlayer();
@@ -125,7 +125,7 @@ void FCardboardTethering::GetCurrentPose(FQuat& CurrentOrientation)
 	}
 }
 
-void FCardboardTethering::GetCurrentOrientationAndPosition(FQuat& CurrentOrientation, FVector& CurrentPosition)
+void FCustomHMD::GetCurrentOrientationAndPosition(FQuat& CurrentOrientation, FVector& CurrentPosition)
 {
 	CurrentPosition = FVector(0.0f, 0.0f, 0.0f);
 
@@ -133,13 +133,13 @@ void FCardboardTethering::GetCurrentOrientationAndPosition(FQuat& CurrentOrienta
 	CurHmdOrientation = LastHmdOrientation = CurrentOrientation;
 }
 
-TSharedPtr<ISceneViewExtension, ESPMode::ThreadSafe> FCardboardTethering::GetViewExtension()
+TSharedPtr<ISceneViewExtension, ESPMode::ThreadSafe> FCustomHMD::GetViewExtension()
 {
-	TSharedPtr<FCardboardTethering, ESPMode::ThreadSafe> ptr(AsShared());
+	TSharedPtr<FCustomHMD, ESPMode::ThreadSafe> ptr(AsShared());
 	return StaticCastSharedPtr<ISceneViewExtension>(ptr);
 }
 
-void FCardboardTethering::ApplyHmdRotation(APlayerController* PC, FRotator& ViewRotation)
+void FCustomHMD::ApplyHmdRotation(APlayerController* PC, FRotator& ViewRotation)
 {
 	ViewRotation.Normalize();
 
@@ -158,17 +158,17 @@ void FCardboardTethering::ApplyHmdRotation(APlayerController* PC, FRotator& View
 	ViewRotation = FRotator(DeltaControlOrientation * CurHmdOrientation);
 }
 
-bool FCardboardTethering::UpdatePlayerCamera(FQuat& CurrentOrientation, FVector& CurrentPosition)
+bool FCustomHMD::UpdatePlayerCamera(FQuat& CurrentOrientation, FVector& CurrentPosition)
 {
 	return false;
 }
 
-bool FCardboardTethering::IsChromaAbCorrectionEnabled() const
+bool FCustomHMD::IsChromaAbCorrectionEnabled() const
 {
 	return false;
 }
 
-bool FCardboardTethering::Exec( UWorld* InWorld, const TCHAR* Cmd, FOutputDevice& Ar )
+bool FCustomHMD::Exec( UWorld* InWorld, const TCHAR* Cmd, FOutputDevice& Ar )
 {
   if (FParse::Command(&Cmd, TEXT("HMD"))) {
     if (FParse::Command(&Cmd, TEXT("CONNECT"))) {
@@ -182,70 +182,70 @@ bool FCardboardTethering::Exec( UWorld* InWorld, const TCHAR* Cmd, FOutputDevice
 	return false;
 }
 
-void FCardboardTethering::OnScreenModeChange(EWindowMode::Type WindowMode)
+void FCustomHMD::OnScreenModeChange(EWindowMode::Type WindowMode)
 {
 }
 
-bool FCardboardTethering::IsPositionalTrackingEnabled() const
-{
-	return false;
-}
-
-bool FCardboardTethering::EnablePositionalTracking(bool enable)
+bool FCustomHMD::IsPositionalTrackingEnabled() const
 {
 	return false;
 }
 
-bool FCardboardTethering::IsHeadTrackingAllowed() const
+bool FCustomHMD::EnablePositionalTracking(bool enable)
+{
+	return false;
+}
+
+bool FCustomHMD::IsHeadTrackingAllowed() const
 {
 	return true;
 }
 
-bool FCardboardTethering::IsInLowPersistenceMode() const
+bool FCustomHMD::IsInLowPersistenceMode() const
 {
 	return false;
 }
 
-void FCardboardTethering::EnableLowPersistenceMode(bool Enable)
+void FCustomHMD::EnableLowPersistenceMode(bool Enable)
 {
 }
 
-void FCardboardTethering::ResetOrientationAndPosition(float yaw)
+void FCustomHMD::ResetOrientationAndPosition(float yaw)
 {
 	ResetOrientation(yaw);
 	ResetPosition();
 }
 
-void FCardboardTethering::ResetOrientation(float Yaw)
+void FCustomHMD::ResetOrientation(float Yaw)
 {
 }
-void FCardboardTethering::ResetPosition()
-{
-}
-
-void FCardboardTethering::SetClippingPlanes(float NCP, float FCP)
+void FCustomHMD::ResetPosition()
 {
 }
 
-void FCardboardTethering::SetBaseRotation(const FRotator& BaseRot)
+void FCustomHMD::SetClippingPlanes(float NCP, float FCP)
 {
 }
 
-FRotator FCardboardTethering::GetBaseRotation() const
+void FCustomHMD::SetBaseRotation(const FRotator& BaseRot)
+{
+}
+
+FRotator FCustomHMD::GetBaseRotation() const
 {
 	return FRotator::ZeroRotator;
 }
 
-void FCardboardTethering::SetBaseOrientation(const FQuat& BaseOrient)
+void FCustomHMD::SetBaseOrientation(const FQuat& BaseOrient)
 {
 }
 
-FQuat FCardboardTethering::GetBaseOrientation() const
+FQuat FCustomHMD::GetBaseOrientation() const
 {
 	return FQuat::Identity;
 }
 
-void FCardboardTethering::DrawDistortionMesh_RenderThread(struct FRenderingCompositePassContext& Context, const FIntPoint& TextureSize)
+void FCustomHMD::DrawDistortionMesh_RenderThread(struct FRenderingCompositePassContext& Context, const FIntPoint& TextureSize)
 {
 	float ClipSpaceQuadZ = 0.0f;
 	FMatrix QuadTexTransform = FMatrix::Identity;
@@ -281,17 +281,17 @@ void FCardboardTethering::DrawDistortionMesh_RenderThread(struct FRenderingCompo
 		sizeof(Indices[0]), &Verts, sizeof(Verts[0]));
 }
 
-bool FCardboardTethering::IsStereoEnabled() const
+bool FCustomHMD::IsStereoEnabled() const
 {
 	return true;
 }
 
-bool FCardboardTethering::EnableStereo(bool stereo)
+bool FCustomHMD::EnableStereo(bool stereo)
 {
 	return true;
 }
 
-void FCardboardTethering::AdjustViewRect(EStereoscopicPass StereoPass, int32& X, int32& Y, uint32& SizeX, uint32& SizeY) const
+void FCustomHMD::AdjustViewRect(EStereoscopicPass StereoPass, int32& X, int32& Y, uint32& SizeX, uint32& SizeY) const
 {
 	SizeX = SizeX / 2;
 	if( StereoPass == eSSP_RIGHT_EYE )
@@ -300,7 +300,7 @@ void FCardboardTethering::AdjustViewRect(EStereoscopicPass StereoPass, int32& X,
 	}
 }
 
-void FCardboardTethering::CalculateStereoViewOffset(const enum EStereoscopicPass StereoPassType, const FRotator& ViewRotation, const float WorldToMeters, FVector& ViewLocation)
+void FCustomHMD::CalculateStereoViewOffset(const enum EStereoscopicPass StereoPassType, const FRotator& ViewRotation, const float WorldToMeters, FVector& ViewLocation)
 {
 	if( StereoPassType != eSSP_FULL)
 	{
@@ -310,7 +310,7 @@ void FCardboardTethering::CalculateStereoViewOffset(const enum EStereoscopicPass
 	}
 }
 
-FMatrix FCardboardTethering::GetStereoProjectionMatrix(const enum EStereoscopicPass StereoPassType, const float FOV) const
+FMatrix FCustomHMD::GetStereoProjectionMatrix(const enum EStereoscopicPass StereoPassType, const float FOV) const
 {
 	const float ProjectionCenterOffset = 0.151976421f;
 	const float PassProjectionOffset = (StereoPassType == eSSP_LEFT_EYE) ? ProjectionCenterOffset : -ProjectionCenterOffset;
@@ -331,18 +331,18 @@ FMatrix FCardboardTethering::GetStereoProjectionMatrix(const enum EStereoscopicP
 		* FTranslationMatrix(FVector(PassProjectionOffset,0,0));
 }
 
-void FCardboardTethering::InitCanvasFromView(FSceneView* InView, UCanvas* Canvas)
+void FCustomHMD::InitCanvasFromView(FSceneView* InView, UCanvas* Canvas)
 {
 }
 
-void FCardboardTethering::GetEyeRenderParams_RenderThread(const FRenderingCompositePassContext& Context, FVector2D& EyeToSrcUVScaleValue, FVector2D& EyeToSrcUVOffsetValue) const
+void FCustomHMD::GetEyeRenderParams_RenderThread(const FRenderingCompositePassContext& Context, FVector2D& EyeToSrcUVScaleValue, FVector2D& EyeToSrcUVOffsetValue) const
 {
 	EyeToSrcUVOffsetValue = FVector2D::ZeroVector;
 	EyeToSrcUVScaleValue = FVector2D(1.0f, 1.0f);
 }
 
 
-void FCardboardTethering::SetupViewFamily(FSceneViewFamily& InViewFamily)
+void FCustomHMD::SetupViewFamily(FSceneViewFamily& InViewFamily)
 {
 	InViewFamily.EngineShowFlags.MotionBlur = 0;
 	InViewFamily.EngineShowFlags.HMDDistortion = true;
@@ -350,7 +350,7 @@ void FCardboardTethering::SetupViewFamily(FSceneViewFamily& InViewFamily)
 	InViewFamily.EngineShowFlags.StereoRendering = IsStereoEnabled();
 }
 
-void FCardboardTethering::SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView)
+void FCustomHMD::SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView)
 {
 	InView.BaseHmdOrientation = FQuat(FRotator(0.0f,0.0f,0.0f));
 	InView.BaseHmdLocation = FVector(0.f);
@@ -358,21 +358,21 @@ void FCardboardTethering::SetupView(FSceneViewFamily& InViewFamily, FSceneView& 
 	InViewFamily.bUseSeparateRenderTarget = false;
 }
 
-void FCardboardTethering::PreRenderView_RenderThread(FRHICommandListImmediate& RHICmdList, FSceneView& InView)
+void FCustomHMD::PreRenderView_RenderThread(FRHICommandListImmediate& RHICmdList, FSceneView& InView)
 {
 	check(IsInRenderingThread());
 }
 
-void FCardboardTethering::PreRenderViewFamily_RenderThread(FRHICommandListImmediate& RHICmdList, FSceneViewFamily& ViewFamily)
+void FCustomHMD::PreRenderViewFamily_RenderThread(FRHICommandListImmediate& RHICmdList, FSceneViewFamily& ViewFamily)
 {
 	check(IsInRenderingThread());
 }
 
-FCardboardTethering::BridgeBaseImpl* FCardboardTethering::GetActiveRHIBridgeImpl() {
+FCustomHMD::BridgeBaseImpl* FCustomHMD::GetActiveRHIBridgeImpl() {
   return pD3D11Bridge;
 }
 
-FCardboardTethering::FCardboardTethering() :
+FCustomHMD::FCustomHMD() :
   CurHmdOrientation(FQuat::Identity),
   LastHmdOrientation(FQuat::Identity),
   DeltaControlRotation(FRotator::ZeroRotator),
@@ -390,7 +390,7 @@ FCardboardTethering::FCardboardTethering() :
   }
 #endif
 
-  FString BaseDir = IPluginManager::Get().FindPlugin("CardboardTethering")->GetBaseDir();
+  FString BaseDir = IPluginManager::Get().FindPlugin("CustomHMD")->GetBaseDir();
 
   // Add on the relative location of the third party dll and load it
   FString LibraryPath;
@@ -413,7 +413,7 @@ FCardboardTethering::FCardboardTethering() :
   UE_LOG(LogTemp, Warning, TEXT("DONE CREATING!"));
 }
 
-FCardboardTethering::~FCardboardTethering()
+FCustomHMD::~FCustomHMD()
 {
   FPlatformProcess::FreeDllHandle(TurboJpegLibraryHandle);
   TurboJpegLibraryHandle = nullptr;
@@ -421,12 +421,12 @@ FCardboardTethering::~FCardboardTethering()
   TurboJpegLibraryHandle = nullptr;
 }
 
-bool FCardboardTethering::IsInitialized() const
+bool FCustomHMD::IsInitialized() const
 {
 	return true;
 }
 
-void FCardboardTethering::UpdateViewport(bool bUseSeparateRenderTarget, const FViewport& InViewport, SViewport* ViewportWidget) {
+void FCustomHMD::UpdateViewport(bool bUseSeparateRenderTarget, const FViewport& InViewport, SViewport* ViewportWidget) {
   check(IsInGameThread());
   //UE_LOG(LogTemp, Warning, TEXT("jpeg handle %d"), TurboJpegLibraryHandle);
   FRHIViewport* const ViewportRHI = InViewport.GetViewportRHI().GetReference();
@@ -441,7 +441,7 @@ void FCardboardTethering::UpdateViewport(bool bUseSeparateRenderTarget, const FV
   GetActiveRHIBridgeImpl()->UpdateViewport(InViewport, ViewportRHI);
 }
 
-void FCardboardTethering::CalculateRenderTargetSize(const class FViewport& Viewport, uint32& InOutSizeX, uint32& InOutSizeY) {
+void FCustomHMD::CalculateRenderTargetSize(const class FViewport& Viewport, uint32& InOutSizeX, uint32& InOutSizeY) {
   check(IsInGameThread());
 
   //	if (Flags.bScreenPercentageEnabled)
@@ -455,7 +455,7 @@ void FCardboardTethering::CalculateRenderTargetSize(const class FViewport& Viewp
   }
 }
 
-bool FCardboardTethering::NeedReAllocateViewportRenderTarget(const FViewport& Viewport) {
+bool FCustomHMD::NeedReAllocateViewportRenderTarget(const FViewport& Viewport) {
   check(IsInGameThread());
 
   if (IsStereoEnabled()) {
@@ -474,7 +474,7 @@ bool FCardboardTethering::NeedReAllocateViewportRenderTarget(const FViewport& Vi
   return false;
 }
 
-void FCardboardTethering::ConnectUsb() {
+void FCustomHMD::ConnectUsb() {
   // Try to find the non-accessory device (hardcoded Nexus 4).
   TSharedPtr<MayaUsbDevice> tempDevice;
   int status = MayaUsbDevice::create(&tempDevice, SharedLibraryInitParams, 0x18d1, 0x4ee2);
@@ -505,7 +505,7 @@ void FCardboardTethering::ConnectUsb() {
   FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("UsbNoDevice", "Could not find the USB device."));
 }
 
-void FCardboardTethering::DisconnectUsb(int reason) {
+void FCustomHMD::DisconnectUsb(int reason) {
   FScopeLock lock(&ActiveUsbDeviceMutex);
   if (!ActiveUsbDevice.IsValid()) {
     UE_LOG(LogTemp, Warning, TEXT("Already disconnected"));
@@ -520,7 +520,7 @@ void FCardboardTethering::DisconnectUsb(int reason) {
   }
 }
 
-void FCardboardTethering::FinishHandshake() {
+void FCustomHMD::FinishHandshake() {
   FScopeLock lock(&ActiveUsbDeviceMutex);
 
   // Set up the send loop.

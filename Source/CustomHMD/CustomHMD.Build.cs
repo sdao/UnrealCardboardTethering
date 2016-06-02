@@ -3,13 +3,13 @@ using System.IO;
 
 namespace UnrealBuildTool.Rules
 {
-	public class CardboardTethering : ModuleRules
+	public class CustomHMD : ModuleRules
 	{
-		public CardboardTethering(TargetInfo Target)
+		public CustomHMD(TargetInfo Target)
 		{
 			PrivateIncludePaths.AddRange(
 				new string[] {
-					"CardboardTethering/Private",
+					"CustomHMD/Private",
 					Path.GetDirectoryName(RulesCompiler.GetModuleFilename("Renderer"))
 					    + "/Private",
 					// ... add other private include paths required here ...

@@ -1,4 +1,4 @@
-#include "CardboardTetheringPrivatePCH.h"
+#include "CustomHMDPrivatePCH.h"
 #include "MayaUsbDevice.h"
 #include "EndianUtils.h"
 #include <sstream>
