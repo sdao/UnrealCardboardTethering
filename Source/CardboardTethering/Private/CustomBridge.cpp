@@ -7,8 +7,6 @@
 
 #if PLATFORM_WINDOWS
 
-#include "CustomWindows.h"
-
 FCardboardTethering::D3D11Bridge::D3D11Bridge(FCardboardTethering* plugin) :
   BridgeBaseImpl(plugin),
   RenderTargetTexture(nullptr),
@@ -26,11 +24,6 @@ void FCardboardTethering::D3D11Bridge::BeginRendering() {
 }
 
 void FCardboardTethering::D3D11Bridge::FinishRendering() {
-  /*blah++;
-  if (blah == 1000) {
-    CustomWindows::DoImageStuff(Plugin->SharedLibraryInitParams, RenderTargetTexture, &data, &size);
-  }*/
-
   FScopeLock lock(&Plugin->ActiveUsbDeviceMutex);
   if (Plugin->ActiveUsbDevice.IsValid() && Plugin->ActiveUsbDevice->isSending()) {
     Plugin->ActiveUsbDevice->sendImage(RenderTargetTexture);
