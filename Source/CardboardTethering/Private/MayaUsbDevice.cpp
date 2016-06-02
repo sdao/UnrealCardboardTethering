@@ -1,6 +1,7 @@
 #include "CardboardTetheringPrivatePCH.h"
 #include "MayaUsbDevice.h"
 #include "EndianUtils.h"
+#include "WindowsHelpers.h"
 #include <sstream>
 #include <iostream>
 #include <iomanip>
@@ -8,15 +9,13 @@
 #include <algorithm>
 
 #include "AllowWindowsPlatformTypes.h"
-#define NOMINMAX
-#include <wrl/client.h>
 #include "libusb.h"
 #include "turbojpeg.h"
 #include "HideWindowsPlatformTypes.h"
 
 #define CHECKSTATUS(status) if (status) return status;
 
-using Microsoft::WRL::ComPtr;
+using WindowsHelpers::ComPtr;
 
 int MayaUsbDevice::create(TSharedPtr<MayaUsbDevice>* out,
   TSharedPtr<LibraryInitParams>& initParams,
