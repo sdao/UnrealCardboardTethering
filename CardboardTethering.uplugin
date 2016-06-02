@@ -2,11 +2,11 @@
 	"FileVersion" : 3,
 	"Version" : 1,
 	"VersionName" : "1.0",
-	"FriendlyName" : "CustomHMD",
-	"Description" : "CustomHMD is a sample of a basic stereo HMD implementation",
+	"FriendlyName" : "Cardboard Tethering",
+	"Description" : "Use an Android device as a tethered HMD for an Unreal game running on your PC",
 	"Category" : "Virtual Reality",
-	"CreatedBy" : "Epic Games, Inc.",
-	"CreatedByURL" : "http://epicgames.com",
+	"CreatedBy" : "Steven Dao",
+	"CreatedByURL" : "https://sdao.me",
 	"DocsURL" : "",
 	"MarketplaceURL" : "",
 	"SupportURL" : "",
@@ -17,7 +17,7 @@
 	"Modules" :
 	[
 		{
-			"Name" : "CustomHMD",
+			"Name" : "CardboardTethering",
 			"Type" : "Runtime",
 			"LoadingPhase" : "Default"
 		}

@@ -1,4 +1,4 @@
-#include "CustomHMDPrivatePCH.h"
+#include "CardboardTetheringPrivatePCH.h"
 #include "LibraryInitParams.h"
 
 #include "AllowWindowsPlatformTypes.h"
