@@ -4,15 +4,46 @@
 #include "CardboardTethering.h"
 #include "RendererPrivate.h"
 #include "ScenePrivate.h"
+#include "SceneViewport.h"
 #include "IPluginManager.h"
 #include "PostProcess/PostProcessHMD.h"
 #include "EndianUtils.h"
+
+#if WITH_EDITOR
+#include "Editor/UnrealEd/Classes/Editor/EditorEngine.h"
+#endif
 
 //---------------------------------------------------
 // CardboardTethering Plugin Implementation
 //---------------------------------------------------
 
 #define LOCTEXT_NAMESPACE "FCardboardTethering"
+
+/** Helper function for acquiring the appropriate FSceneViewport */
+FSceneViewport* FindSceneViewport() {
+  if (!GIsEditor) {
+    UGameEngine* GameEngine = Cast<UGameEngine>(GEngine);
+    return GameEngine->SceneViewport.Get();
+  }
+#if WITH_EDITOR
+  else {
+    UEditorEngine* EditorEngine = CastChecked<UEditorEngine>(GEngine);
+    FSceneViewport* PIEViewport = (FSceneViewport*) EditorEngine->GetPIEViewport();
+    if (PIEViewport != nullptr && PIEViewport->IsStereoRenderingAllowed()) {
+      // PIE is setup for stereo rendering
+      return PIEViewport;
+    } else {
+      // Check to see if the active editor viewport is drawing in stereo mode
+      // @todo vreditor: Should work with even non-active viewport!
+      FSceneViewport* EditorViewport = (FSceneViewport*) EditorEngine->GetActiveViewport();
+      if (EditorViewport != nullptr && EditorViewport->IsStereoRenderingAllowed()) {
+        return EditorViewport;
+      }
+    }
+  }
+#endif
+  return nullptr;
+}
 
 class FCardboardTetheringPlugin : public ICardboardTetheringPlugin
 {
@@ -297,6 +328,19 @@ bool FCardboardTethering::IsStereoEnabled() const
 
 bool FCardboardTethering::EnableStereo(bool stereo)
 {
+  if (ViewerWidth.load() <= 0 || ViewerHeight.load() <= 0 || !stereo) {
+    return true;
+  }
+
+  // Closest resolution to what we want probably.
+  FSystemResolution::RequestResolutionChange(1280, 720, EWindowMode::Windowed);
+
+  // Set the viewport to match that of the HMD display
+  FSceneViewport* SceneVP = FindSceneViewport();
+  if (SceneVP) {
+    SceneVP->SetViewportSize(ViewerWidth.load() * 2, ViewerHeight.load()); // for two cardboard eyes
+  }
+
 	return true;
 }
 
