@@ -28,7 +28,9 @@ namespace UnrealBuildTool.Rules
 					"Renderer",
 					"ShaderCore",
 					"HeadMountedDisplay",
-                    "Projects"
+                    "Projects",
+										"Slate",
+										"SlateCore",
 				}
 				);
 

@@ -1,25 +1,24 @@
 {
-	"FileVersion" : 3,
-	"Version" : 1,
-	"VersionName" : "1.0",
-	"FriendlyName" : "CardboardTethering",
-	"Description" : "CardboardTethering is a sample of a basic stereo HMD implementation",
-	"Category" : "Virtual Reality",
-	"CreatedBy" : "Epic Games, Inc.",
-	"CreatedByURL" : "http://epicgames.com",
-	"DocsURL" : "",
-	"MarketplaceURL" : "",
-	"SupportURL" : "",
-	"EnabledByDefault" : false,
-	"CanContainContent" : false,
-	"IsBetaVersion" : false,
-	"Installed" : false,
-	"Modules" :
-	[
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "Cardboard Tethering",
+	"Description": "Use an Android device as a tethered HMD for an Unreal game running on your PC",
+	"Category": "Virtual Reality",
+	"CreatedBy": "Steven Dao",
+	"CreatedByURL": "https://sdao.me",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"EnabledByDefault": false,
+	"CanContainContent": false,
+	"IsBetaVersion": false,
+	"Installed": false,
+	"Modules": [
 		{
-			"Name" : "CardboardTethering",
-			"Type" : "Runtime",
-			"LoadingPhase" : "Default"
+			"Name": "CardboardTethering",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
 		}
 	]
 }

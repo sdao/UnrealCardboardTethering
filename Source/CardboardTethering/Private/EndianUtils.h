@@ -8,6 +8,11 @@ namespace EndianUtils {
     return boost::endian::native_to_big(x);
   }
 
+  template <typename T>
+  inline T bigToNative(T x) {
+    return boost::endian::big_to_native(x);
+  }
+
   inline float bigToNativeFloat(float x) {
     if (boost::endian::order::native == boost::endian::order::big) {
       return x;

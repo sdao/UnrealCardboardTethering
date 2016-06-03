@@ -293,6 +293,12 @@ int MayaUsbDevice::convertToAccessory() {
   return STATUS_OK;
 }
 
+#define HANDSHAKE_ASSERT(idx, expect, receive) if (expect != receive) { \
+  std::cout << "Handshake[" << idx << "] expect=" << (int) expect << ", receive=" << (int) receive << std::endl; \
+  success = false; \
+  goto error; \
+}
+
 bool MayaUsbDevice::waitHandshakeAsync(std::function<void(bool)> callback) {
   if (_inEndpoint == 0) {
     return false;
@@ -332,19 +338,36 @@ bool MayaUsbDevice::waitHandshakeAsync(std::function<void(bool)> callback) {
       } else {
         bool success = true;
         if (read == BUFFER_LEN) {
-          for (int i = 0; i < BUFFER_LEN; ++i) {
-            unsigned char expected = (unsigned char) i;
-            if (inputBuffer[i] != expected) {
-              std::cout << "Handshake expect=" << (int) expected
-                        << ", receive=" << (int) inputBuffer[i] << std::endl;
-              success = false;
-              break;
-            }
+          HANDSHAKE_ASSERT(0, TAG_HEADER, inputBuffer[0]);
+
+          // Start populating params.
+          {
+            std::unique_lock<std::mutex> lock(_paramsMutex);
+            float floatData;
+            int32_t intData;
+
+            HANDSHAKE_ASSERT(1, TAG_WIDTH, inputBuffer[1]);
+            std::memcpy(&intData, &inputBuffer[2], sizeof(int32_t));
+            _width = EndianUtils::bigToNative(intData);
+
+            HANDSHAKE_ASSERT(6, TAG_HEIGHT, inputBuffer[6]);
+            std::memcpy(&intData, &inputBuffer[7], sizeof(int32_t));
+            _height = EndianUtils::bigToNative(intData);
+
+            HANDSHAKE_ASSERT(11, TAG_INTERPUPILLARY, inputBuffer[11]);
+            std::memcpy(&floatData, &inputBuffer[12], sizeof(float));
+            _interpupillary = EndianUtils::bigToNativeFloat(floatData);
+          }
+
+          for (int i = 16; i < BUFFER_LEN; ++i) {
+            HANDSHAKE_ASSERT(i, TAG_FILL, inputBuffer[i]);
           }
         } else {
           std::cout << "Handshake read=" << read << std::endl;
           success = false;
         }
+
+error:
         std::cout << "Received handshake, status=" << status << std::endl;
 
         _handshake.store(success);
@@ -401,6 +424,10 @@ bool MayaUsbDevice::beginReadLoop(
       if (!cancelled) {
         // Error if loop ended but not cancelled.
         std::cout << "Status in beginReadLoop=" << status << std::endl;
+
+        // Reset handshake.
+        _handshake.store(false);
+
         callback(nullptr, STATUS_LIBUSB_ERROR + status);
       }
 
@@ -505,6 +532,9 @@ bool MayaUsbDevice::beginSendLoop(std::function<void(int)> failureCallback) {
         }
 
         if (error) {
+          // Reset handshake.
+          _handshake.store(false);
+
           // Only signal on a send error.
           failureCallback(error);
           break;
@@ -606,3 +636,11 @@ bool MayaUsbDevice::sendImage(ID3D11Texture2D* source) {
 
   return false;
 }
+
+void MayaUsbDevice::getViewerParams(int32_t* width, int32_t* height, float* interpupillary) {
+  std::unique_lock<std::mutex> lock(_paramsMutex);
+  *width = _width;
+  *height = _height;
+  *interpupillary = _interpupillary;
+}
+

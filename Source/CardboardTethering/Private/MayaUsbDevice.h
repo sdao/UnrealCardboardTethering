@@ -83,6 +83,11 @@ class MayaUsbDevice {
   size_t _jpegBufferWidthPitch;
   size_t _jpegBufferHeight;
 
+  std::mutex _paramsMutex;
+  int32_t _width;
+  int32_t _height;
+  float _interpupillary;
+
   int getControlInt16(int16_t* out, uint8_t request);
   int sendControl(uint8_t request);
   int sendControlString(uint8_t request, uint16_t index, std::string str);
@@ -110,6 +115,12 @@ public:
   static constexpr int STATUS_LIBUSB_ERROR = -1000;
   static constexpr int STATUS_JPEG_ERROR = -2000;
 
+  static constexpr unsigned char TAG_HEADER = 0x27;
+  static constexpr unsigned char TAG_WIDTH = 0x28;
+  static constexpr unsigned char TAG_HEIGHT = 0x29;
+  static constexpr unsigned char TAG_INTERPUPILLARY = 0x2A;
+  static constexpr unsigned char TAG_FILL = 0x30;
+
   static int create(TSharedPtr<MayaUsbDevice>* out,
     TSharedPtr<LibraryInitParams>& initParams,
     uint16_t vid, uint16_t pid);
@@ -126,5 +137,6 @@ public:
   bool beginSendLoop(std::function<void(int)> failureCallback);
   bool isSending();
   bool sendImage(ID3D11Texture2D* source);
+  void getViewerParams(int32_t* width, int32_t* height, float* interpupillary);
   static bool supportsRasterFormat(DXGI_FORMAT format);
 };

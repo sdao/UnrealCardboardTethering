@@ -7,6 +7,8 @@
 #include "SceneViewExtension.h"
 #include "LibraryInitParams.h"
 #include "MayaUsbDevice.h"
+#include <atomic>
+#include <cstdint>
 
 #if PLATFORM_WINDOWS
 #include "AllowWindowsPlatformTypes.h"
@@ -170,6 +172,15 @@ private:
   IRendererModule* RendererModule;
   void* TurboJpegLibraryHandle;
   void* LibUsbLibraryHandle;
+
+  std::atomic<float> FeedbackOrientationX;
+  std::atomic<float> FeedbackOrientationY;
+  std::atomic<float> FeedbackOrientationZ;
+  std::atomic<float> FeedbackOrientationW;
+
+  std::atomic<int32_t> ViewerWidth;
+  std::atomic<int32_t> ViewerHeight;
+  std::atomic<float> ViewerInterpupillary;
 
 #if PLATFORM_WINDOWS
   TRefCountPtr<D3D11Bridge>	pD3D11Bridge;

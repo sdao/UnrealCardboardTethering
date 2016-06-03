@@ -6,6 +6,7 @@
 #include "ScenePrivate.h"
 #include "IPluginManager.h"
 #include "PostProcess/PostProcessHMD.h"
+#include "EndianUtils.h"
 
 //---------------------------------------------------
 // CardboardTethering Plugin Implementation
@@ -57,9 +58,11 @@ EHMDDeviceType::Type FCardboardTethering::GetHMDDeviceType() const
 
 bool FCardboardTethering::GetHMDMonitorInfo(MonitorInfo& MonitorDesc)
 {
-	MonitorDesc.MonitorName = "";
+	MonitorDesc.MonitorName = "Google Cardboard Tethering";
 	MonitorDesc.MonitorId = 0;
-	MonitorDesc.DesktopX = MonitorDesc.DesktopY = MonitorDesc.ResolutionX = MonitorDesc.ResolutionY = 0;
+	MonitorDesc.DesktopX = MonitorDesc.DesktopY = 0;
+  MonitorDesc.ResolutionX = ViewerWidth;
+  MonitorDesc.ResolutionY = ViewerHeight;
 	return false;
 }
 
@@ -93,11 +96,12 @@ void FCardboardTethering::SetInterpupillaryDistance(float NewInterpupillaryDista
 
 float FCardboardTethering::GetInterpupillaryDistance() const
 {
-	return 0.064f;
+  return ViewerInterpupillary.load();
 }
 
 void FCardboardTethering::GetCurrentPose(FQuat& CurrentOrientation)
 {
+  /*
 	// very basic.  no head model, no prediction, using debuglocalplayer
 	ULocalPlayer* Player = GEngine->GetDebugLocalPlayer();
 
@@ -123,6 +127,8 @@ void FCardboardTethering::GetCurrentPose(FQuat& CurrentOrientation)
 	{
 		CurrentOrientation = FQuat(FRotator(0.0f, 0.0f, 0.0f));
 	}
+  */
+  CurrentOrientation = FQuat(FeedbackOrientationX.load(), FeedbackOrientationY.load(), FeedbackOrientationZ.load(), FeedbackOrientationW.load());
 }
 
 void FCardboardTethering::GetCurrentOrientationAndPosition(FQuat& CurrentOrientation, FVector& CurrentPosition)
@@ -160,7 +166,10 @@ void FCardboardTethering::ApplyHmdRotation(APlayerController* PC, FRotator& View
 
 bool FCardboardTethering::UpdatePlayerCamera(FQuat& CurrentOrientation, FVector& CurrentPosition)
 {
-	return false;
+  GetCurrentPose(CurHmdOrientation);
+  CurrentOrientation = LastHmdOrientation = CurHmdOrientation;
+
+  return true;
 }
 
 bool FCardboardTethering::IsChromaAbCorrectionEnabled() const
@@ -316,8 +325,8 @@ FMatrix FCardboardTethering::GetStereoProjectionMatrix(const enum EStereoscopicP
 	const float PassProjectionOffset = (StereoPassType == eSSP_LEFT_EYE) ? ProjectionCenterOffset : -ProjectionCenterOffset;
 
 	const float HalfFov = 2.19686294f / 2.f;
-	const float InWidth = 640.f;
-	const float InHeight = 480.f;
+  const float InWidth = ViewerWidth; // 640.f;
+  const float InHeight = ViewerHeight; // 480.f;
 	const float XS = 1.0f / tan(HalfFov);
 	const float YS = InWidth / tan(HalfFov) / InHeight;
 
@@ -383,6 +392,12 @@ FCardboardTethering::FCardboardTethering() :
 {
   static const FName RendererModuleName("Renderer");
   RendererModule = FModuleManager::GetModulePtr<IRendererModule>(RendererModuleName);
+
+  FQuat zero(FRotator(0.0f, 0.0f, 0.0f));
+  FeedbackOrientationX.store(zero.X);
+  FeedbackOrientationY.store(zero.Y);
+  FeedbackOrientationZ.store(zero.Z);
+  FeedbackOrientationW.store(zero.W);
 
 #if PLATFORM_WINDOWS
   if (IsPCPlatform(GMaxRHIShaderPlatform) && !IsOpenGLPlatform(GMaxRHIShaderPlatform)) {
@@ -496,6 +511,7 @@ void FCardboardTethering::ConnectUsb() {
       if (success) {
         FinishHandshake();
       } else {
+        DisconnectUsb(0);
         FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("UsbHandshakeFailed", "USB handshake failure."));
       }
     });
@@ -523,6 +539,15 @@ void FCardboardTethering::DisconnectUsb(int reason) {
 void FCardboardTethering::FinishHandshake() {
   FScopeLock lock(&ActiveUsbDeviceMutex);
 
+  // Record the params.
+  int32_t w, h;
+  float ip;
+  ActiveUsbDevice->getViewerParams(&w, &h, &ip);
+  ViewerWidth.store(w);
+  ViewerHeight.store(h);
+  ViewerInterpupillary.store(ip);
+  UE_LOG(LogTemp, Warning, TEXT("w=%d, h=%d, ip=%f"), w, h, ip);
+
   // Set up the send loop.
   ActiveUsbDevice->beginSendLoop([this](int reason) {
     DisconnectUsb(reason);
@@ -534,6 +559,17 @@ void FCardboardTethering::FinishHandshake() {
       DisconnectUsb(reason);
     } else {
       // Don't do anything right now.
+      float floatData[4];
+      std::memcpy(floatData, data, 4 * sizeof(float));
+      for (int i = 0; i < 4; ++i) {
+        floatData[i] = EndianUtils::bigToNativeFloat(floatData[i]);
+      }
+
+      // Determined by empirical testing, this seems to convert the coord space correctly!
+      FeedbackOrientationX.store(floatData[0]);
+      FeedbackOrientationY.store(floatData[2]);
+      FeedbackOrientationZ.store(floatData[3]);
+      FeedbackOrientationW.store(floatData[1]);
     }
   }, 4 * sizeof(float));
 }

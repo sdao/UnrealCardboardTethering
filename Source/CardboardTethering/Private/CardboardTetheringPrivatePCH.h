@@ -3,5 +3,7 @@
 #pragma once
 
 #include "Engine.h"
+#include "SlateBasics.h"
 #include "IHeadMountedDisplay.h"
 #include "Runtime/Engine/Public/ScreenRendering.h"
+#include "MagicSparkles.h"

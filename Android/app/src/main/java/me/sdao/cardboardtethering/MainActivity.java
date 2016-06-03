@@ -7,18 +7,18 @@ import android.graphics.BitmapFactory;
 import android.hardware.usb.UsbAccessory;
 import android.hardware.usb.UsbManager;
 import android.opengl.GLES20;
+import android.os.Handler;
 import android.os.ParcelFileDescriptor;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
 
-import com.google.vrtoolkit.cardboard.CardboardView;
-import com.google.vrtoolkit.cardboard.Eye;
-import com.google.vrtoolkit.cardboard.HeadTransform;
-import com.google.vrtoolkit.cardboard.Viewport;
+import com.google.vr.sdk.base.GvrView;
+import com.google.vr.sdk.base.Eye;
+import com.google.vr.sdk.base.HeadTransform;
+import com.google.vr.sdk.base.Viewport;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -43,9 +43,19 @@ public class MainActivity extends AppCompatActivity {
     public static final int STATUS_WRITE_ERROR = 4;
     public static final int STATUS_READ_ERROR = 5;
 
+    private static final byte TAG_HEADER = 0x27;
+    private static final byte TAG_WIDTH = 0x28;
+    private static final byte TAG_HEIGHT = 0x29;
+    private static final byte TAG_INTERPUPILLARY = 0x2A;
+    private static final byte TAG_FILL = 0x30;
+
     final private Object mBitmapLock = new Object();
     private Bitmap mBitmap = null;
     private boolean mBitmapNew = false;
+    private GvrView mGvrView = null;
+    private int mViewportWidth;
+    private int mViewportHeight;
+    private float mInterpupillary;
 
     final private Object mRotationLock = new Object();
     private float[] mRotation = new float[4];
@@ -53,13 +63,19 @@ public class MainActivity extends AppCompatActivity {
     private AtomicBoolean mCancel = new AtomicBoolean();
     private ParcelFileDescriptor mParcelFileDescriptor;
 
+    private Handler mHandler = new Handler();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        CardboardView cardboardView = (CardboardView) findViewById(R.id.cardboard_view);
-        cardboardView.setRenderer(new CardboardView.StereoRenderer() {
+        mGvrView = (GvrView) findViewById(R.id.gvr_view);
+        if (mGvrView == null) {
+            return;
+        }
+
+        mGvrView.setRenderer(new GvrView.StereoRenderer() {
             ScreenQuad screenQuad = new ScreenQuad(MainActivity.this);
 
             @Override
@@ -86,13 +102,13 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFinishFrame(Viewport viewport) {
-            }
+            public void onFinishFrame(Viewport viewport) {}
 
             @Override
             public void onSurfaceChanged(int width, int height) {
-                // TODO: send dimensions to Maya host.
-                // Idea: send through same channel as head tracking but use a NaN.
+                mViewportWidth = width;
+                mViewportHeight = height;
+                mInterpupillary = mGvrView.getInterpupillaryDistance();
             }
 
             @Override
@@ -107,7 +123,12 @@ public class MainActivity extends AppCompatActivity {
         });
 
         hideSystemUi();
-        connectAccessory();
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                connectAccessory();
+            }
+        }, 500);
     }
 
     private void hideSystemUi() {
@@ -181,11 +202,32 @@ public class MainActivity extends AppCompatActivity {
     private boolean sendHandshake(@NonNull ParcelFileDescriptor parcelFileDescriptor) {
         FileDescriptor fd = parcelFileDescriptor.getFileDescriptor();
         try (OutputStream os = new FileOutputStream(fd)) {
-            byte[] handshake = new byte[16384];
-            for (int i = 0; i < 16384; ++i) {
-                handshake[i] = (byte) i;
+            Log.v("VIEWERPARAMS", String.format("w %d h %d ip %f", mViewportWidth, mViewportHeight,
+                    mInterpupillary));
+
+            ByteBuffer handshake = ByteBuffer.allocate(Byte.SIZE * 16384)
+                    .order(ByteOrder.BIG_ENDIAN);
+
+            // Put header.
+            handshake.put(TAG_HEADER);
+
+            // Put width.
+            handshake.put(TAG_WIDTH)
+                    .putInt(mViewportWidth);
+
+            // Put height.
+            handshake.put(TAG_HEIGHT)
+                    .putInt(mViewportHeight);
+
+            // Put interpupillary.
+            handshake.put(TAG_INTERPUPILLARY)
+                    .putFloat(mInterpupillary);
+
+            while (handshake.hasRemaining()) {
+                handshake.put(TAG_FILL);
             }
-            os.write(handshake);
+
+            os.write(handshake.array());
             return true;
         } catch (IOException e) {
             return false;
