@@ -6,7 +6,7 @@
 #include "IHeadMountedDisplay.h"
 #include "SceneViewExtension.h"
 #include "LibraryInitParams.h"
-#include "MayaUsbDevice.h"
+#include "UsbDevice.h"
 #include <atomic>
 #include <cstdint>
 
@@ -157,7 +157,7 @@ public:
 
   TSharedPtr<LibraryInitParams> SharedLibraryInitParams;
   FCriticalSection ActiveUsbDeviceMutex;
-  TSharedPtr<MayaUsbDevice> ActiveUsbDevice;
+  TSharedPtr<UsbDevice> ActiveUsbDevice;
 
 private:
 

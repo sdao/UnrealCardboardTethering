@@ -535,8 +535,8 @@ bool FCardboardTethering::NeedReAllocateViewportRenderTarget(const FViewport& Vi
 
 void FCardboardTethering::ConnectUsb() {
   // Try to find the non-accessory device (hardcoded Nexus 4).
-  TSharedPtr<MayaUsbDevice> tempDevice;
-  int status = MayaUsbDevice::create(&tempDevice, SharedLibraryInitParams, 0x18d1, 0x4ee2);
+  TSharedPtr<UsbDevice> tempDevice;
+  int status = UsbDevice::create(&tempDevice, SharedLibraryInitParams, 0x18d1, 0x4ee2);
   if (!status) {
     tempDevice->convertToAccessory();
 
@@ -544,8 +544,8 @@ void FCardboardTethering::ConnectUsb() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 
-  TSharedPtr<MayaUsbDevice> realDevice;
-  status = MayaUsbDevice::create(&realDevice, SharedLibraryInitParams);
+  TSharedPtr<UsbDevice> realDevice;
+  status = UsbDevice::create(&realDevice, SharedLibraryInitParams);
   if (!status) {
     UE_LOG(LogTemp, Warning, TEXT("CONNECTED!"));
 

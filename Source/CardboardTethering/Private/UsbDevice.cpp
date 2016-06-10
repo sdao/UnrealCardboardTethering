@@ -1,5 +1,5 @@
 #include "CardboardTetheringPrivatePCH.h"
-#include "MayaUsbDevice.h"
+#include "UsbDevice.h"
 #include "EndianUtils.h"
 #include "WindowsHelpers.h"
 #include <sstream>
@@ -17,23 +17,23 @@
 
 using WindowsHelpers::ComPtr;
 
-int MayaUsbDevice::create(TSharedPtr<MayaUsbDevice>* out,
+int UsbDevice::create(TSharedPtr<UsbDevice>* out,
   TSharedPtr<LibraryInitParams>& initParams,
   uint16_t vid, uint16_t pid) {
-  return create(out, initParams, { MayaUsbDeviceId(vid, pid) });
+  return create(out, initParams, { UsbDeviceId(vid, pid) });
 }
 
-int MayaUsbDevice::create(TSharedPtr<MayaUsbDevice>* out,
+int UsbDevice::create(TSharedPtr<UsbDevice>* out,
   TSharedPtr<LibraryInitParams>& initParams,
-  std::vector<MayaUsbDeviceId> ids) {
+  std::vector<UsbDeviceId> ids) {
   int status;
 
-  MayaUsbDeviceId outId;
+  UsbDeviceId outId;
   libusb_device_handle* outHandle = nullptr;
   std::string outManufacturer, outProduct;
   uint8_t outInputEndpoint = 0, outOutputEndpoint = 0;
 
-  for (const MayaUsbDeviceId& id : ids) {
+  for (const UsbDeviceId& id : ids) {
     libusb_device_handle* tempHnd = libusb_open_device_with_vid_pid(
       initParams->UsbContext, id.vid, id.pid);
     if (tempHnd != nullptr) {
@@ -113,15 +113,15 @@ int MayaUsbDevice::create(TSharedPtr<MayaUsbDevice>* out,
   }
 
   // Populate device.
-  *out = TSharedPtr<MayaUsbDevice>(new MayaUsbDevice(initParams,
+  *out = TSharedPtr<UsbDevice>(new UsbDevice(initParams,
     outId, outHandle,
     outManufacturer, outProduct,
     outInputEndpoint, outOutputEndpoint));
   return STATUS_OK;
 }
 
-MayaUsbDevice::MayaUsbDevice(TSharedPtr<LibraryInitParams>& initParams,
-  MayaUsbDeviceId id,
+UsbDevice::UsbDevice(TSharedPtr<LibraryInitParams>& initParams,
+  UsbDeviceId id,
   libusb_device_handle* handle,
   std::string manufacturer,
   std::string product,
@@ -141,7 +141,7 @@ MayaUsbDevice::MayaUsbDevice(TSharedPtr<LibraryInitParams>& initParams,
     _rgbImageBuffer(new unsigned char[RGB_IMAGE_SIZE]),
     _jpegBuffer(nullptr) {}
 
-MayaUsbDevice::~MayaUsbDevice() {
+UsbDevice::~UsbDevice() {
   bool receiving = _receiveWorker && !_receiveWorker->isCancelled();
   bool sending = _sendWorker && !_sendWorker->isCancelled();
   bool needDelay = false;
@@ -171,7 +171,7 @@ MayaUsbDevice::~MayaUsbDevice() {
   libusb_close(_hnd);
 }
 
-void MayaUsbDevice::flushInputBuffer(unsigned char* buf) {
+void UsbDevice::flushInputBuffer(unsigned char* buf) {
   if (_inEndpoint != 0) {
     int status = 0;
     int read;
@@ -186,7 +186,7 @@ void MayaUsbDevice::flushInputBuffer(unsigned char* buf) {
   }
 }
 
-std::string MayaUsbDevice::getDescription() {
+std::string UsbDevice::getDescription() {
   std::ostringstream os;
   os << std::setfill('0') << std::hex
      << std::setw(4) << _id.vid << ":"
@@ -198,7 +198,7 @@ std::string MayaUsbDevice::getDescription() {
   return os.str();
 }
 
-int MayaUsbDevice::getControlInt16(int16_t* out, uint8_t request) {
+int UsbDevice::getControlInt16(int16_t* out, uint8_t request) {
   int16_t data;
   if (libusb_control_transfer(
       _hnd,
@@ -216,7 +216,7 @@ int MayaUsbDevice::getControlInt16(int16_t* out, uint8_t request) {
   return STATUS_OK;
 }
 
-int MayaUsbDevice::sendControl(uint8_t request) {
+int UsbDevice::sendControl(uint8_t request) {
   if (libusb_control_transfer(
       _hnd,
       LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_VENDOR,
@@ -232,7 +232,7 @@ int MayaUsbDevice::sendControl(uint8_t request) {
   return STATUS_OK;
 }
 
-int MayaUsbDevice::sendControlString(uint8_t request, uint16_t index,
+int UsbDevice::sendControlString(uint8_t request, uint16_t index,
     std::string str) {
   char temp[256];
   str.copy(&temp[0], sizeof(temp));
@@ -251,7 +251,7 @@ int MayaUsbDevice::sendControlString(uint8_t request, uint16_t index,
   return STATUS_OK;
 }
 
-int MayaUsbDevice::convertToAccessory() {
+int UsbDevice::convertToAccessory() {
   int status = 0;
 
   // Get protocol.
@@ -299,7 +299,7 @@ int MayaUsbDevice::convertToAccessory() {
   goto error; \
 }
 
-bool MayaUsbDevice::waitHandshakeAsync(std::function<void(bool)> callback) {
+bool UsbDevice::waitHandshakeAsync(std::function<void(bool)> callback) {
   if (_inEndpoint == 0) {
     return false;
   }
@@ -382,11 +382,11 @@ error:
   return true;
 }
 
-bool MayaUsbDevice::isHandshakeComplete() {
+bool UsbDevice::isHandshakeComplete() {
   return _handshake.load();
 }
 
-bool MayaUsbDevice::beginReadLoop(
+bool UsbDevice::beginReadLoop(
     std::function<void(const unsigned char*, int)> callback,
     size_t readFrame) {
   if (_inEndpoint == 0) {
@@ -439,7 +439,7 @@ bool MayaUsbDevice::beginReadLoop(
   return true;
 }
 
-bool MayaUsbDevice::beginSendLoop(std::function<void(int)> failureCallback) {
+bool UsbDevice::beginSendLoop(std::function<void(int)> failureCallback) {
   if (_outEndpoint == 0) {
     return false;
   }
@@ -552,11 +552,11 @@ bool MayaUsbDevice::beginSendLoop(std::function<void(int)> failureCallback) {
   return true;
 }
 
-bool MayaUsbDevice::isSending() {
+bool UsbDevice::isSending() {
   return _sendWorker && !_sendWorker->isCancelled();
 }
 
-bool MayaUsbDevice::supportsRasterFormat(DXGI_FORMAT format) {
+bool UsbDevice::supportsRasterFormat(DXGI_FORMAT format) {
   switch (format) {
     case DXGI_FORMAT_B8G8R8A8_TYPELESS:
     case DXGI_FORMAT_B8G8R8X8_TYPELESS:
@@ -566,7 +566,7 @@ bool MayaUsbDevice::supportsRasterFormat(DXGI_FORMAT format) {
   }
 }
 
-bool MayaUsbDevice::sendImage(ID3D11Texture2D* source) {
+bool UsbDevice::sendImage(ID3D11Texture2D* source) {
   // If the send loop is busy, then skip this frame.
   if (_sendMutex.try_lock()) {
     std::lock_guard<std::mutex> lock(_sendMutex, std::adopt_lock);
@@ -637,10 +637,9 @@ bool MayaUsbDevice::sendImage(ID3D11Texture2D* source) {
   return false;
 }
 
-void MayaUsbDevice::getViewerParams(int32_t* width, int32_t* height, float* interpupillary) {
+void UsbDevice::getViewerParams(int32_t* width, int32_t* height, float* interpupillary) {
   std::unique_lock<std::mutex> lock(_paramsMutex);
   *width = _width;
   *height = _height;
   *interpupillary = _interpupillary;
 }
-

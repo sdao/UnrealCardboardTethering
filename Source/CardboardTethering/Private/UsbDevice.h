@@ -40,20 +40,20 @@ private:
   SharedAtomicBool _cancel;
 };
 
-struct MayaUsbDeviceId {
+struct UsbDeviceId {
   uint16_t vid;
   uint16_t pid;
-  MayaUsbDeviceId() : vid(0), pid(0) {}
-  MayaUsbDeviceId(uint16_t v, uint16_t p) : vid(v), pid(p) {}
-  static std::vector<MayaUsbDeviceId> getAoapIds() {
+  UsbDeviceId() : vid(0), pid(0) {}
+  UsbDeviceId(uint16_t v, uint16_t p) : vid(v), pid(p) {}
+  static std::vector<UsbDeviceId> getAoapIds() {
     return {
-      MayaUsbDeviceId(0x18D1, 0x2D00), // accessory
-      MayaUsbDeviceId(0x18D1, 0x2D01), // accessory + ADB
+      UsbDeviceId(0x18D1, 0x2D00), // accessory
+      UsbDeviceId(0x18D1, 0x2D01), // accessory + ADB
     };
   }
 };
 
-class MayaUsbDevice {
+class UsbDevice {
   static constexpr size_t RGB_IMAGE_SIZE = 2048 * 2048 * 16; // about 64 MB
   static constexpr size_t BUFFER_LEN     = 16384;
 
@@ -61,7 +61,7 @@ class MayaUsbDevice {
 
   libusb_device_handle* _hnd;
 
-  MayaUsbDeviceId _id;
+  UsbDeviceId _id;
   std::string _manufacturer;
   std::string _product;
   uint8_t _inEndpoint;
@@ -94,8 +94,8 @@ class MayaUsbDevice {
 
   void flushInputBuffer(unsigned char* buf);
 
-  MayaUsbDevice(TSharedPtr<LibraryInitParams>& initParams,
-    MayaUsbDeviceId id,
+  UsbDevice(TSharedPtr<LibraryInitParams>& initParams,
+    UsbDeviceId id,
     libusb_device_handle* handle,
     std::string manufacturer,
     std::string product,
@@ -121,13 +121,13 @@ public:
   static constexpr unsigned char TAG_INTERPUPILLARY = 0x2A;
   static constexpr unsigned char TAG_FILL = 0x30;
 
-  static int create(TSharedPtr<MayaUsbDevice>* out,
+  static int create(TSharedPtr<UsbDevice>* out,
     TSharedPtr<LibraryInitParams>& initParams,
     uint16_t vid, uint16_t pid);
-  static int create(TSharedPtr<MayaUsbDevice>* out,
+  static int create(TSharedPtr<UsbDevice>* out,
     TSharedPtr<LibraryInitParams>& initParams,
-    std::vector<MayaUsbDeviceId> ids = MayaUsbDeviceId::getAoapIds());
-  ~MayaUsbDevice();
+    std::vector<UsbDeviceId> ids = UsbDeviceId::getAoapIds());
+  ~UsbDevice();
   std::string getDescription();
   int convertToAccessory();
   bool waitHandshakeAsync(std::function<void(bool)> callback);
