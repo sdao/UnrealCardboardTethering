@@ -7,12 +7,8 @@
 
 #if PLATFORM_WINDOWS
 
-FCardboardTethering::D3D11Bridge::D3D11Bridge(FCardboardTethering* plugin) :
-  BridgeBaseImpl(plugin),
-  RenderTargetTexture(nullptr),
-  data(nullptr),
-  size(0),
-  blah(0) {}
+FCardboardTethering::D3D11Bridge::D3D11Bridge(FCardboardTethering* plugin)
+  : BridgeBaseImpl(plugin), RenderTargetTexture(nullptr) {}
 
 void FCardboardTethering::D3D11Bridge::BeginRendering() {
   check(IsInRenderingThread());

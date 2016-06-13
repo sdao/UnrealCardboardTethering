@@ -17,15 +17,19 @@
 
 using WindowsHelpers::ComPtr;
 
-int UsbDevice::create(TSharedPtr<UsbDevice>* out,
+int UsbDevice::create(
+  TSharedPtr<UsbDevice>* out,
   TSharedPtr<LibraryInitParams>& initParams,
-  uint16_t vid, uint16_t pid) {
+  uint16_t vid, uint16_t pid
+) {
   return create(out, initParams, { UsbDeviceId(vid, pid) });
 }
 
-int UsbDevice::create(TSharedPtr<UsbDevice>* out,
+int UsbDevice::create(
+  TSharedPtr<UsbDevice>* out,
   TSharedPtr<LibraryInitParams>& initParams,
-  std::vector<UsbDeviceId> ids) {
+  std::vector<UsbDeviceId> ids
+) {
   int status;
 
   UsbDeviceId outId;
@@ -126,8 +130,8 @@ UsbDevice::UsbDevice(TSharedPtr<LibraryInitParams>& initParams,
   std::string manufacturer,
   std::string product,
   uint8_t inEndpoint,
-  uint8_t outEndpoint)
-  : _initParams(initParams),
+  uint8_t outEndpoint
+) : _initParams(initParams),
     _id(id),
     _hnd(handle),
     _manufacturer(manufacturer),
@@ -294,7 +298,8 @@ int UsbDevice::convertToAccessory() {
 }
 
 #define HANDSHAKE_ASSERT(idx, expect, receive) if (expect != receive) { \
-  std::cout << "Handshake[" << idx << "] expect=" << (int) expect << ", receive=" << (int) receive << std::endl; \
+  std::cout << "Handshake[" << idx << \
+  "] expect=" << (int) expect << ", receive=" << (int) receive << std::endl; \
   success = false; \
   goto error; \
 }

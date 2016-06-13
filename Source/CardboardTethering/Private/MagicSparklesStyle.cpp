@@ -34,6 +34,7 @@ FName FMagicSparklesStyle::GetStyleSetName()
 #define BOX_BRUSH( RelativePath, ... ) FSlateBoxBrush( Style->RootToContentDir( RelativePath, TEXT(".png") ), __VA_ARGS__ )
 #define BORDER_BRUSH( RelativePath, ... ) FSlateBorderBrush( Style->RootToContentDir( RelativePath, TEXT(".png") ), __VA_ARGS__ )
 #define TTF_FONT( RelativePath, ... ) FSlateFontInfo( Style->RootToContentDir( RelativePath, TEXT(".ttf") ), __VA_ARGS__ )
+#define TTF_CORE_FONT( RelativePath, ... ) FSlateFontInfo( FPaths::EngineContentDir()  / "Slate" / RelativePath + TEXT(".ttf"), __VA_ARGS__ )
 #define OTF_FONT( RelativePath, ... ) FSlateFontInfo( Style->RootToContentDir( RelativePath, TEXT(".otf") ), __VA_ARGS__ )
 
 const FVector2D Icon16x16(16.0f, 16.0f);
@@ -43,9 +44,15 @@ const FVector2D Icon40x40(40.0f, 40.0f);
 TSharedRef< FSlateStyleSet > FMagicSparklesStyle::Create()
 {
 	TSharedRef< FSlateStyleSet > Style = MakeShareable(new FSlateStyleSet("MagicSparklesStyle"));
-	Style->SetContentRoot(IPluginManager::Get().FindPlugin("MagicSparkles")->GetBaseDir() / TEXT("Resources"));
+	Style->SetContentRoot(IPluginManager::Get().FindPlugin("CardboardTethering")->GetBaseDir() / TEXT("Resources"));
 
 	Style->Set("MagicSparkles.PluginAction", new IMAGE_BRUSH(TEXT("ButtonIcon_40x"), Icon40x40));
+
+  Style->Set("MagicSparkles.StatusTitle", FTextBlockStyle()
+    .SetFont(TTF_CORE_FONT("Fonts/Roboto-Regular", 16))
+    .SetColorAndOpacity(FSlateColor::UseForeground())
+    .SetShadowOffset(FVector2D::ZeroVector)
+    .SetShadowColorAndOpacity(FLinearColor::Black));
 
 	return Style;
 }
