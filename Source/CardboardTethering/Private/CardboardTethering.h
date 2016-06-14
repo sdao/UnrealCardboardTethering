@@ -154,6 +154,10 @@ public:
   FCriticalSection ActiveUsbDeviceMutex;
   TSharedPtr<UsbDevice> ActiveUsbDevice;
 
+  bool GetCachedConnectionState() const;
+  void ShowConnectUsbDialog();
+  void DisconnectUsb();
+
 private:
   FQuat CurHmdOrientation;
   FQuat LastHmdOrientation;
@@ -178,6 +182,8 @@ private:
 
   FCriticalSection StatusWindowMutex;
   TSharedPtr<SWindow> StatusWindow;
+
+  bool CachedConnectionState;
 
 #if PLATFORM_WINDOWS
   TRefCountPtr<D3D11Bridge>	pD3D11Bridge;

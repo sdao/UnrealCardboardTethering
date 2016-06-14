@@ -34,4 +34,8 @@ public:
 	{
 		return FModuleManager::Get().IsModuleLoaded( "CardboardTethering" );
 	}
+
+  virtual bool IsConnected() = 0;
+  virtual void ShowConnectDialog() = 0;
+  virtual void Disconnect() = 0;
 };

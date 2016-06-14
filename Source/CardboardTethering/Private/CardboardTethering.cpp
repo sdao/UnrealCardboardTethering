@@ -8,7 +8,7 @@
 #include "IPluginManager.h"
 #include "PostProcess/PostProcessHMD.h"
 #include "EndianUtils.h"
-#include "MagicSparklesStyle.h"
+#include "CardboardTetheringStyle.h"
 
 #if WITH_EDITOR
 #include "Editor/UnrealEd/Classes/Editor/EditorEngine.h"
@@ -47,24 +47,54 @@ FSceneViewport* FindSceneViewport() {
 }
 
 class FCardboardTetheringPlugin : public ICardboardTetheringPlugin {
+  TSharedPtr< FCardboardTethering, ESPMode::ThreadSafe > CardboardTethering;
+
   /** IHeadMountedDisplayModule implementation */
   virtual TSharedPtr< class IHeadMountedDisplay, ESPMode::ThreadSafe > CreateHeadMountedDisplay() override;
 
   FString GetModulePriorityKeyName() const override {
     return FString(TEXT("CardboardTethering"));
   }
+
+  /** ICardboardTetheringPlugin implementation */
+  virtual bool IsConnected() override;
+  virtual void ShowConnectDialog() override;
+  virtual void Disconnect() override;
 };
 
 IMPLEMENT_MODULE(FCardboardTetheringPlugin, CardboardTethering)
 
 TSharedPtr< class IHeadMountedDisplay, ESPMode::ThreadSafe > FCardboardTetheringPlugin::CreateHeadMountedDisplay() {
-  TSharedPtr< FCardboardTethering, ESPMode::ThreadSafe > CardboardTethering(new FCardboardTethering());
+  if (!CardboardTethering.IsValid()) {
+    CardboardTethering = TSharedPtr< FCardboardTethering, ESPMode::ThreadSafe >(new FCardboardTethering());
+  }
+
   if (CardboardTethering->IsInitialized()) {
     return CardboardTethering;
   }
-  return NULL;
+
+  return nullptr;
 }
 
+bool FCardboardTetheringPlugin::IsConnected() {
+  if (CardboardTethering.IsValid()) {
+    return CardboardTethering->GetCachedConnectionState();
+  }
+
+  return false;
+}
+
+void FCardboardTetheringPlugin::ShowConnectDialog() {
+  if (CardboardTethering.IsValid()) {
+    return CardboardTethering->ShowConnectUsbDialog();
+  }
+}
+
+void FCardboardTetheringPlugin::Disconnect() {
+  if (CardboardTethering.IsValid()) {
+    return CardboardTethering->DisconnectUsb();
+  }
+}
 
 //---------------------------------------------------
 // CardboardTethering IHeadMountedDisplay Implementation
@@ -369,7 +399,8 @@ FCardboardTethering::FCardboardTethering() :
   DeltaControlOrientation(FQuat::Identity),
   LastSensorTime(-1.0),
   WindowMirrorMode(2),
-  TurboJpegLibraryHandle(0) {
+  TurboJpegLibraryHandle(0),
+  CachedConnectionState(false) {
   static const FName RendererModuleName("Renderer");
   RendererModule = FModuleManager::GetModulePtr<IRendererModule>(RendererModuleName);
 
@@ -482,6 +513,7 @@ void FCardboardTethering::ConnectUsb(uint16_t vid, uint16_t pid) {
   status = UsbDevice::create(&realDevice, SharedLibraryInitParams);
   if (!status) {
     UE_LOG(LogTemp, Warning, TEXT("CONNECTED!"));
+    CachedConnectionState = true;
 
     OpenStatusWindowOnGameThread(
       LOCTEXT("HandshakeWaitMessage", "Waiting for Android device..."),
@@ -508,6 +540,7 @@ void FCardboardTethering::ConnectUsb(uint16_t vid, uint16_t pid) {
 }
 
 void FCardboardTethering::DisconnectUsb(int reason) {
+  CachedConnectionState = false;
   CloseStatusWindowOnGameThread();
 
   FScopeLock lock(&ActiveUsbDeviceMutex);
@@ -575,7 +608,7 @@ void FCardboardTethering::OpenDialogOnGameThread(FText msg) {
 void FCardboardTethering::OpenStatusWindowOnGameThread(FText msg,
     std::function<FReply(void)> cancelHandler) {
   FGraphEventRef Task = FFunctionGraphTask::CreateAndDispatchWhenReady([=]() {
-    FMagicSparklesStyle::Initialize();
+    CardboardTetheringStyle::Initialize();
 
     FScopeLock lock(&StatusWindowMutex);
     if (StatusWindow.IsValid()) {
@@ -600,8 +633,8 @@ void FCardboardTethering::OpenStatusWindowOnGameThread(FText msg,
               [
                 SNew(STextBlock)
                   .Text(msg)
-                  .TextStyle(&FMagicSparklesStyle::Get().GetWidgetStyle<FTextBlockStyle>(
-                    TEXT("MagicSparkles.StatusTitle")))
+                  .TextStyle(&CardboardTetheringStyle::Get().GetWidgetStyle<FTextBlockStyle>(
+                    TEXT("CardboardTethering.StatusTitle")))
               ]
             + SGridPanel::Slot(1, 0)
               .Padding(2.0f)
@@ -623,4 +656,16 @@ void FCardboardTethering::CloseStatusWindowOnGameThread() {
       StatusWindow->RequestDestroyWindow();
     }
   }, TStatId(), nullptr, ENamedThreads::GameThread);
+}
+
+bool FCardboardTethering::GetCachedConnectionState() const {
+  return CachedConnectionState;
+}
+
+void FCardboardTethering::ShowConnectUsbDialog() {
+  ConnectUsb();
+}
+
+void FCardboardTethering::DisconnectUsb() {
+  DisconnectUsb(0);
 }

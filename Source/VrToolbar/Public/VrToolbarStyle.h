@@ -4,7 +4,7 @@
 #include "SlateBasics.h"
 
 /**  */
-class FMagicSparklesStyle
+class FVrToolbarStyle
 {
 public:
 

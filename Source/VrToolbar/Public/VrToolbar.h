@@ -7,7 +7,7 @@
 class FToolBarBuilder;
 class FMenuBuilder;
 
-class FMagicSparklesModule : public IModuleInterface
+class FVrToolbarModule : public IModuleInterface
 {
 public:
 
@@ -17,6 +17,7 @@ public:
 	
 	/** This function will be bound to Command. */
 	void PluginButtonClicked();
+  ECheckBoxState PluginButtonCheckState();
 	
 private:
 

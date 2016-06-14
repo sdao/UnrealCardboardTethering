@@ -2,13 +2,13 @@
 
 #include "CardboardTetheringPrivatePCH.h"
 
-#include "MagicSparklesStyle.h"
+#include "CardboardTetheringStyle.h"
 #include "SlateGameResources.h"
 #include "IPluginManager.h"
 
-TSharedPtr< FSlateStyleSet > FMagicSparklesStyle::StyleInstance = NULL;
+TSharedPtr< FSlateStyleSet > CardboardTetheringStyle::StyleInstance = NULL;
 
-void FMagicSparklesStyle::Initialize()
+void CardboardTetheringStyle::Initialize()
 {
 	if (!StyleInstance.IsValid())
 	{
@@ -17,16 +17,16 @@ void FMagicSparklesStyle::Initialize()
 	}
 }
 
-void FMagicSparklesStyle::Shutdown()
+void CardboardTetheringStyle::Shutdown()
 {
 	FSlateStyleRegistry::UnRegisterSlateStyle(*StyleInstance);
 	ensure(StyleInstance.IsUnique());
 	StyleInstance.Reset();
 }
 
-FName FMagicSparklesStyle::GetStyleSetName()
+FName CardboardTetheringStyle::GetStyleSetName()
 {
-	static FName StyleSetName(TEXT("MagicSparklesStyle"));
+	static FName StyleSetName(TEXT("CardboardTetheringStyle"));
 	return StyleSetName;
 }
 
@@ -41,14 +41,12 @@ const FVector2D Icon16x16(16.0f, 16.0f);
 const FVector2D Icon20x20(20.0f, 20.0f);
 const FVector2D Icon40x40(40.0f, 40.0f);
 
-TSharedRef< FSlateStyleSet > FMagicSparklesStyle::Create()
+TSharedRef< FSlateStyleSet > CardboardTetheringStyle::Create()
 {
-	TSharedRef< FSlateStyleSet > Style = MakeShareable(new FSlateStyleSet("MagicSparklesStyle"));
+	TSharedRef< FSlateStyleSet > Style = MakeShareable(new FSlateStyleSet("CardboardTetheringStyle"));
 	Style->SetContentRoot(IPluginManager::Get().FindPlugin("CardboardTethering")->GetBaseDir() / TEXT("Resources"));
 
-	Style->Set("MagicSparkles.PluginAction", new IMAGE_BRUSH(TEXT("ButtonIcon_40x"), Icon40x40));
-
-  Style->Set("MagicSparkles.StatusTitle", FTextBlockStyle()
+  Style->Set("CardboardTethering.StatusTitle", FTextBlockStyle()
     .SetFont(TTF_CORE_FONT("Fonts/Roboto-Regular", 16))
     .SetColorAndOpacity(FSlateColor::UseForeground())
     .SetShadowOffset(FVector2D::ZeroVector)
@@ -63,7 +61,7 @@ TSharedRef< FSlateStyleSet > FMagicSparklesStyle::Create()
 #undef TTF_FONT
 #undef OTF_FONT
 
-void FMagicSparklesStyle::ReloadTextures()
+void CardboardTetheringStyle::ReloadTextures()
 {
 	if (FSlateApplication::IsInitialized())
 	{
@@ -71,7 +69,7 @@ void FMagicSparklesStyle::ReloadTextures()
 	}
 }
 
-const ISlateStyle& FMagicSparklesStyle::Get()
+const ISlateStyle& CardboardTetheringStyle::Get()
 {
 	return *StyleInstance;
 }
