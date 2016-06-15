@@ -8,6 +8,9 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
 #include "LibraryInitParams.h"
 
 #include "AllowWindowsPlatformTypes.h"
@@ -45,11 +48,40 @@ struct UsbDeviceId {
   uint16_t pid;
   UsbDeviceId() : vid(0), pid(0) {}
   UsbDeviceId(uint16_t v, uint16_t p) : vid(v), pid(p) {}
+  bool operator==(const UsbDeviceId& other) const {
+    return vid == other.vid && pid == other.pid;
+  }
+  bool isAoapId() const {
+    for (UsbDeviceId id : getAoapIds()) {
+      if (id == *this) {
+        return true;
+      }
+    }
+    return false;
+  }
+  std::string toString() const {
+    std::ostringstream os;
+    os << std::setfill('0') << std::hex
+      << std::setw(4) << vid << ":"
+      << std::setw(4) << pid
+      << std::dec << std::setfill(' ');
+    return os.str();
+  }
   static std::vector<UsbDeviceId> getAoapIds() {
     return {
       UsbDeviceId(0x18D1, 0x2D00), // accessory
       UsbDeviceId(0x18D1, 0x2D01), // accessory + ADB
     };
+  }
+};
+
+struct UsbDeviceDesc {
+  UsbDeviceId id;
+  std::string manufacturer;
+  std::string product;
+  UsbDeviceDesc(UsbDeviceId i, std::string m, std::string p) : id(i), manufacturer(m), product(p) {}
+  bool isAoapDesc() {
+    return id.isAoapId();
   }
 };
 
@@ -61,9 +93,7 @@ class UsbDevice {
 
   libusb_device_handle* _hnd;
 
-  UsbDeviceId _id;
-  std::string _manufacturer;
-  std::string _product;
+  UsbDeviceDesc _desc;
   uint8_t _inEndpoint;
   uint8_t _outEndpoint;
 
@@ -95,10 +125,8 @@ class UsbDevice {
   void flushInputBuffer(unsigned char* buf);
 
   UsbDevice(TSharedPtr<LibraryInitParams>& initParams,
-    UsbDeviceId id,
+    UsbDeviceDesc desc,
     libusb_device_handle* handle,
-    std::string manufacturer,
-    std::string product,
     uint8_t inEndpoint,
     uint8_t outEndpoint);
 
@@ -127,6 +155,8 @@ public:
   static int create(TSharedPtr<UsbDevice>* out,
     TSharedPtr<LibraryInitParams>& initParams,
     std::vector<UsbDeviceId> ids = UsbDeviceId::getAoapIds());
+  static std::vector<UsbDeviceDesc> getConnectedDeviceDescriptions(
+    TSharedPtr<LibraryInitParams>& initParams);
   ~UsbDevice();
   std::string getDescription();
   int convertToAccessory();

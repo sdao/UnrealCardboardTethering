@@ -2,9 +2,6 @@
 #include "UsbDevice.h"
 #include "EndianUtils.h"
 #include "WindowsHelpers.h"
-#include <sstream>
-#include <iostream>
-#include <iomanip>
 #include <cstring>
 #include <algorithm>
 
@@ -118,24 +115,75 @@ int UsbDevice::create(
 
   // Populate device.
   *out = TSharedPtr<UsbDevice>(new UsbDevice(initParams,
-    outId, outHandle,
-    outManufacturer, outProduct,
-    outInputEndpoint, outOutputEndpoint));
+    UsbDeviceDesc(outId, outManufacturer, outProduct),
+    outHandle, outInputEndpoint, outOutputEndpoint));
   return STATUS_OK;
 }
 
+std::vector<UsbDeviceDesc> UsbDevice::getConnectedDeviceDescriptions(
+    TSharedPtr<LibraryInitParams>& initParams) {
+  std::vector<UsbDeviceDesc> descs;
+
+  libusb_device** devices;
+  ssize_t numDevices = libusb_get_device_list(initParams->UsbContext, &devices);
+
+  for (int i = 0; i < numDevices; ++i) {
+    libusb_device* dev = devices[i];
+    int status;
+
+    libusb_device_descriptor desc;
+    status = libusb_get_device_descriptor(dev, &desc);
+    if (status < 0) {
+      continue;
+    }
+
+    libusb_device_handle* hnd;
+    status = libusb_open(dev, &hnd);
+    if (status < 0) {
+      continue;
+    }
+
+    char manufacturerString[256];
+    status = libusb_get_string_descriptor_ascii(
+      hnd,
+      desc.iManufacturer,
+      reinterpret_cast<unsigned char*>(manufacturerString),
+      sizeof(manufacturerString)
+      );
+    if (status < 0) {
+      libusb_close(hnd);
+      continue;
+    }
+
+    char productString[256];
+    status = libusb_get_string_descriptor_ascii(
+      hnd,
+      desc.iProduct,
+      reinterpret_cast<unsigned char*>(productString),
+      sizeof(productString)
+      );
+    if (status < 0) {
+      libusb_close(hnd);
+      continue;
+    }
+
+    descs.push_back(UsbDeviceDesc(UsbDeviceId(desc.idVendor, desc.idProduct),
+      manufacturerString, productString));
+    libusb_close(hnd);
+  }
+
+  libusb_free_device_list(devices, true);
+  return descs;
+}
+
 UsbDevice::UsbDevice(TSharedPtr<LibraryInitParams>& initParams,
-  UsbDeviceId id,
+  UsbDeviceDesc desc,
   libusb_device_handle* handle,
-  std::string manufacturer,
-  std::string product,
   uint8_t inEndpoint,
   uint8_t outEndpoint
 ) : _initParams(initParams),
-    _id(id),
+    _desc(desc),
     _hnd(handle),
-    _manufacturer(manufacturer),
-    _product(product),
     _inEndpoint(inEndpoint),
     _outEndpoint(outEndpoint),
     _receiveWorker(nullptr),
@@ -192,13 +240,7 @@ void UsbDevice::flushInputBuffer(unsigned char* buf) {
 
 std::string UsbDevice::getDescription() {
   std::ostringstream os;
-  os << std::setfill('0') << std::hex
-     << std::setw(4) << _id.vid << ":"
-     << std::setw(4) << _id.pid << " "
-     << std::dec << std::setfill(' ');
-
-  // Print device manufacturer and product name.
-  os << _manufacturer << " " << _product;
+  os << _desc.id.toString() << " " << _desc.manufacturer << " " << _desc.product;
   return os.str();
 }
 

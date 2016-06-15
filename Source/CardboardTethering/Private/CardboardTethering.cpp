@@ -663,9 +663,107 @@ bool FCardboardTethering::GetCachedConnectionState() const {
 }
 
 void FCardboardTethering::ShowConnectUsbDialog() {
-  ConnectUsb();
+  FGraphEventRef Task = FFunctionGraphTask::CreateAndDispatchWhenReady([=]() {
+    CardboardTetheringStyle::Initialize();
+
+    FScopeLock lock(&ConnectDialogMutex);
+    if (ConnectDialog.IsValid()) {
+      ConnectDialog->RequestDestroyWindow();
+    }
+
+    auto deviceList = UsbDevice::getConnectedDeviceDescriptions(SharedLibraryInitParams);
+    DialogState = ConnectDialogState(deviceList);
+
+    ConnectDialog = SNew(SWindow)
+      .Title(LOCTEXT("ConnectDialogTitle", "Connect to Android Device"))
+      .SizingRule(ESizingRule::FixedSize)
+      .ClientSize(FVector2D(400, 100))
+      .SupportsMaximize(false)
+      .SupportsMinimize(false)
+      .bDragAnywhere(true)
+      [
+        SNew(SGridPanel)
+          .FillRow(2, 1.0f)
+          .FillColumn(0, 1.0f)
+          + SGridPanel::Slot(0, 0).Padding(2.0f)
+            [
+              SNew(SComboButton)
+                .OnGetMenuContent_Lambda([&]() {
+                  FMenuBuilder menu(true, nullptr);
+                  int i = 0;
+                  for (auto& desc : DialogState.list) {
+                    menu.AddMenuEntry(
+                      GetDeviceLabel(desc),
+                      GetDeviceTooltip(desc),
+                      FSlateIcon(),
+                      FUIAction(FExecuteAction::CreateLambda([=]() {
+                        DialogState.selectedItem = i;
+                      })));
+                    ++i;
+                  }
+                  return menu.MakeWidget();
+                })
+                .ButtonContent()
+                [
+                  SNew(SHorizontalBox) + SHorizontalBox::Slot().VAlign(VAlign_Center)
+                    [
+                      SNew(STextBlock).Text_Lambda([&]() {
+                        if (DialogState.selectedItem >= 0 &&
+                            DialogState.selectedItem < DialogState.list.size()) {
+                          return GetDeviceLabel(DialogState.list[DialogState.selectedItem]);
+                        } else {
+                          return FText();
+                        }
+                      })
+                    ]
+                ]
+            ]
+          + SGridPanel::Slot(0, 1).Padding(2.0f)
+            [
+              SNew(STextBlock).Text(LOCTEXT("TestStatusText", "There's already a device in accessory mode."))
+            ]
+          + SGridPanel::Slot(0, 2).Padding(2.0f)
+          + SGridPanel::Slot(0, 3).Padding(2.0f)
+            [
+              SNew(SBox).HAlign(EHorizontalAlignment::HAlign_Right)
+              [
+                SNew(SButton)
+                  .Text(LOCTEXT("ConnectButtonLabel", "Connect"))
+                  .IsEnabled_Lambda([&]() {
+                    return DialogState.selectedItem != -1;
+                  })
+                  .OnClicked_Lambda([&]() {
+                    if (ConnectDialog.IsValid()) {
+                      ConnectDialog->RequestDestroyWindow();
+                      
+                      if (DialogState.selectedItem >= 0 &&
+                          DialogState.selectedItem < DialogState.list.size()) {
+                        UsbDeviceDesc selection = DialogState.list[DialogState.selectedItem];
+                        ConnectUsb(selection.id.vid, selection.id.pid);
+                      }
+                    }
+                    return FReply::Handled();
+                  })
+              ]
+            ]
+      ];
+    FSlateApplication::Get().AddWindow(ConnectDialog.ToSharedRef());
+  }, TStatId(), nullptr, ENamedThreads::GameThread);
+
+  // ConnectUsb();
 }
 
 void FCardboardTethering::DisconnectUsb() {
   DisconnectUsb(0);
+}
+
+FText FCardboardTethering::GetDeviceLabel(const UsbDeviceDesc& device) {
+  return FText::Format(LOCTEXT("DeviceNameFormat", "{0} {1}"),
+    FText::FromString(FString(device.manufacturer.c_str())),
+    FText::FromString(FString(device.product.c_str())));
+}
+
+FText FCardboardTethering::GetDeviceTooltip(const UsbDeviceDesc& device) {
+  return FText::Format(LOCTEXT("DeviceToolTip", "{0} ({1})"),
+    GetDeviceLabel(device), FText::FromString(FString(device.id.toString().c_str())));
 }

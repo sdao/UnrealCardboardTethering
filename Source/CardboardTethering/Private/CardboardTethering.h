@@ -183,6 +183,24 @@ private:
   FCriticalSection StatusWindowMutex;
   TSharedPtr<SWindow> StatusWindow;
 
+  struct ConnectDialogState {
+    std::vector<UsbDeviceDesc> list;
+    int selectedItem;
+    ConnectDialogState() : selectedItem(-1) {}
+    ConnectDialogState(std::vector<UsbDeviceDesc>& newList) {
+      list = newList;
+      if (list.size() > 0) {
+        selectedItem = 0;
+      } else {
+        selectedItem = -1;
+      }
+    }
+  };
+
+  FCriticalSection ConnectDialogMutex;
+  TSharedPtr<SWindow> ConnectDialog;
+  ConnectDialogState DialogState;
+
   bool CachedConnectionState;
 
 #if PLATFORM_WINDOWS
@@ -197,6 +215,9 @@ private:
   void OpenDialogOnGameThread(FText msg);
   void OpenStatusWindowOnGameThread(FText msg, std::function<FReply(void)> cancelHandler);
   void CloseStatusWindowOnGameThread();
+
+  static FText GetDeviceLabel(const UsbDeviceDesc& device);
+  static FText GetDeviceTooltip(const UsbDeviceDesc& device);
 };
 
 DEFINE_LOG_CATEGORY_STATIC(LogHMD, Log, All);
