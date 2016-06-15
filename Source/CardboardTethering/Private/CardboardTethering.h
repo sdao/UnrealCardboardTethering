@@ -186,13 +186,17 @@ private:
   struct ConnectDialogState {
     std::vector<UsbDeviceDesc> list;
     int selectedItem;
-    ConnectDialogState() : selectedItem(-1) {}
-    ConnectDialogState(std::vector<UsbDeviceDesc>& newList) {
-      list = newList;
+    int accessoryItem;
+    ConnectDialogState() : selectedItem(-1), accessoryItem(-1) {}
+    ConnectDialogState(std::vector<UsbDeviceDesc>& newList)
+        : list(newList), selectedItem(-1), accessoryItem(-1) {
+      for (int i = 0; i < list.size(); ++i) {
+        if (list[i].isAoapDesc()) {
+          accessoryItem = i;
+        }
+      }
       if (list.size() > 0) {
-        selectedItem = 0;
-      } else {
-        selectedItem = -1;
+        selectedItem = accessoryItem == -1 ? 0 : accessoryItem;
       }
     }
   };

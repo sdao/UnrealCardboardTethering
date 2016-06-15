@@ -499,44 +499,53 @@ bool FCardboardTethering::NeedReAllocateViewportRenderTarget(const FViewport& Vi
 }
 
 void FCardboardTethering::ConnectUsb(uint16_t vid, uint16_t pid) {
-  // Try to find the non-accessory device (hardcoded Nexus 4).
-  TSharedPtr<UsbDevice> tempDevice;
-  int status = UsbDevice::create(&tempDevice, SharedLibraryInitParams, vid, pid);
-  if (!status) {
+  int status;
+  UsbDeviceId id(vid, pid);
+
+  // Try to find the non-accessory device only if the ID is non-accessory.
+  if (!id.isAoapId()) {
+    TSharedPtr<UsbDevice> tempDevice;
+    status = UsbDevice::create(&tempDevice, SharedLibraryInitParams, vid, pid);
+    if (status) {
+      OpenDialogOnGameThread(LOCTEXT("UsbNoDevice", "Could not find the USB device."));
+      return;
+    }
+
     tempDevice->convertToAccessory();
 
     // Wait for device re-renumeration.
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 
+  // Try to find the accessory device.
   TSharedPtr<UsbDevice> realDevice;
   status = UsbDevice::create(&realDevice, SharedLibraryInitParams);
-  if (!status) {
-    UE_LOG(LogTemp, Warning, TEXT("CONNECTED!"));
-    CachedConnectionState = true;
-
-    OpenStatusWindowOnGameThread(
-      LOCTEXT("HandshakeWaitMessage", "Waiting for Android device..."),
-      [=]() {
-        DisconnectUsb(0);
-        return FReply::Handled();
-      }
-    );
-
-    FScopeLock lock(&ActiveUsbDeviceMutex);
-    ActiveUsbDevice = realDevice;
-    ActiveUsbDevice->waitHandshakeAsync([this](bool success) {
-      if (success) {
-        FinishHandshake();
-      } else {
-        DisconnectUsb(0);
-        OpenDialogOnGameThread(LOCTEXT("UsbHandshakeFailed", "USB handshake failure."));
-      }
-    });
+  if (status) {
+    OpenDialogOnGameThread(LOCTEXT("UsbNoDevice", "Could not find the USB device."));
     return;
   }
 
-  OpenDialogOnGameThread(LOCTEXT("UsbNoDevice", "Could not find the USB device."));
+  UE_LOG(LogTemp, Warning, TEXT("CONNECTED!"));
+  CachedConnectionState = true;
+
+  OpenStatusWindowOnGameThread(
+    LOCTEXT("HandshakeWaitMessage", "Waiting for Android device..."),
+    [=]() {
+      DisconnectUsb(0);
+      return FReply::Handled();
+    }
+  );
+
+  FScopeLock lock(&ActiveUsbDeviceMutex);
+  ActiveUsbDevice = realDevice;
+  ActiveUsbDevice->waitHandshakeAsync([this](bool success) {
+    if (success) {
+      FinishHandshake();
+    } else {
+      DisconnectUsb(0);
+      OpenDialogOnGameThread(LOCTEXT("UsbHandshakeFailed", "USB handshake failure."));
+    }
+  });
 }
 
 void FCardboardTethering::DisconnectUsb(int reason) {
@@ -673,6 +682,8 @@ void FCardboardTethering::ShowConnectUsbDialog() {
 
     auto deviceList = UsbDevice::getConnectedDeviceDescriptions(SharedLibraryInitParams);
     DialogState = ConnectDialogState(deviceList);
+    UE_LOG(LogTemp, Warning, TEXT("selected %d, accessory %d, len %d"),
+      DialogState.selectedItem, DialogState.accessoryItem, DialogState.list.size());
 
     ConnectDialog = SNew(SWindow)
       .Title(LOCTEXT("ConnectDialogTitle", "Connect to Android Device"))
@@ -691,15 +702,15 @@ void FCardboardTethering::ShowConnectUsbDialog() {
                 .OnGetMenuContent_Lambda([&]() {
                   FMenuBuilder menu(true, nullptr);
                   int i = 0;
-                  for (auto& desc : DialogState.list) {
+                  for (int i = 0; i < DialogState.list.size(); ++i) {
+                    const auto& desc = DialogState.list[i];
                     menu.AddMenuEntry(
                       GetDeviceLabel(desc),
                       GetDeviceTooltip(desc),
                       FSlateIcon(),
-                      FUIAction(FExecuteAction::CreateLambda([=]() {
+                      FUIAction(FExecuteAction::CreateLambda([&]() {
                         DialogState.selectedItem = i;
                       })));
-                    ++i;
                   }
                   return menu.MakeWidget();
                 })
@@ -717,10 +728,28 @@ void FCardboardTethering::ShowConnectUsbDialog() {
                       })
                     ]
                 ]
+                .IsEnabled_Lambda([&]() {
+                  if (DialogState.list.size() == 0) {
+                    return false;
+                  } else if (DialogState.accessoryItem != -1) {
+                    return false;
+                  } else {
+                    return true;
+                  }
+                })
             ]
           + SGridPanel::Slot(0, 1).Padding(2.0f)
             [
-              SNew(STextBlock).Text(LOCTEXT("TestStatusText", "There's already a device in accessory mode."))
+              SNew(STextBlock).Text_Lambda([&]() {
+                if (DialogState.list.size() == 0) {
+                  return LOCTEXT("StatusNoAccessory", "No devices are available.");
+                } else if (DialogState.accessoryItem != -1) {
+                  return LOCTEXT("StatusExistingAccessory",
+                    "Because there's already a device in accessory mode, it must be used.");
+                } else {
+                  return FText();
+                }
+              })
             ]
           + SGridPanel::Slot(0, 2).Padding(2.0f)
           + SGridPanel::Slot(0, 3).Padding(2.0f)
@@ -740,6 +769,9 @@ void FCardboardTethering::ShowConnectUsbDialog() {
                           DialogState.selectedItem < DialogState.list.size()) {
                         UsbDeviceDesc selection = DialogState.list[DialogState.selectedItem];
                         ConnectUsb(selection.id.vid, selection.id.pid);
+                      } else {
+                        UE_LOG(LogTemp, Error, TEXT("Index %d, %d out of bounds"),
+                          DialogState.selectedItem, DialogState.accessoryItem);
                       }
                     }
                     return FReply::Handled();
