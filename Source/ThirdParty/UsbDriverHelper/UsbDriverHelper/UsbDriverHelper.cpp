@@ -22,17 +22,15 @@ std::string getInfName(const wdi_device_info* device) {
 }
 
 int main(int argc, char** argv) {
-  if (argc < 3) {
+  if (argc < 2) {
     return -1;
   }
 
   std::string vidStr(argv[1]);
   std::string pidStr(argv[2]);
-  std::string miStr(argv[3]);
 
   uint16_t vid = std::stoi(vidStr);
   uint16_t pid = std::stoi(pidStr);
-  int8_t mi = std::stoi(miStr);
 
   wdi_options_create_list opts;
   opts.list_all = true;
@@ -42,8 +40,7 @@ int main(int argc, char** argv) {
   wdi_device_info *device, *list;
   if (wdi_create_list(&list, &opts) == WDI_SUCCESS) {
     for (device = list; device != nullptr; device = device->next) {
-      if (device->vid == vid && device->pid == pid &&
-          device->is_composite ? device->mi == mi : -1 == mi) {
+      if (device->vid == vid && device->pid == pid && (!device->is_composite || device->mi == 0)) {
         std::string infName = getInfName(device);
 
         wdi_options_prepare_driver prepareOpts;

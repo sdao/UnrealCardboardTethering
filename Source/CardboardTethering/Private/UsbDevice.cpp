@@ -192,6 +192,10 @@ std::vector<UsbDeviceDesc> UsbDevice::getInstallableDeviceDescriptions() {
   wdi_device_info *device, *list;
   if (wdi_create_list(&list, &opts) == WDI_SUCCESS) {
     for (device = list; device != NULL; device = device->next) {
+      if (device->is_composite && device->mi != 0) {
+        continue;
+      }
+
       UsbDeviceId id(device->vid, device->pid);
       if (!id.isAndroidId()) {
         continue;
@@ -200,7 +204,7 @@ std::vector<UsbDeviceDesc> UsbDevice::getInstallableDeviceDescriptions() {
       std::string manufacturer(wdi_get_vendor_name(device->vid));
       std::string product(device->desc);
       descs.push_back(UsbDeviceDesc(
-        UsbDeviceId(device->vid, device->pid, device->is_composite ? device->mi : -1),
+        UsbDeviceId(device->vid, device->pid),
         manufacturer,
         product));
     }

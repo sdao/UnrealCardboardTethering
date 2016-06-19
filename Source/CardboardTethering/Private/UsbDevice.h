@@ -90,11 +90,10 @@ struct UsbDeviceId {
 
   uint16_t vid;
   uint16_t pid;
-  int8_t mi;
 
-  UsbDeviceId() : vid(0), pid(0), mi(-1) {}
-  UsbDeviceId(uint16_t v, uint16_t p) : vid(v), pid(p), mi(-1) {}
-  UsbDeviceId(uint16_t v, uint16_t p, int8_t m) : vid(v), pid(p), mi(m) {}
+  UsbDeviceId() : vid(0), pid(0) {}
+  UsbDeviceId(uint16_t v, uint16_t p) : vid(v), pid(p) {}
+  UsbDeviceId(uint16_t v, uint16_t p, int8_t m) : vid(v), pid(p) {}
 
   bool operator==(const UsbDeviceId& other) const {
     // Ignore mi for equality.

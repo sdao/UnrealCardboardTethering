@@ -539,7 +539,8 @@ void FCardboardTethering::ConnectUsb(uint16_t vid, uint16_t pid) {
   TSharedPtr<UsbDevice> realDevice;
   status = UsbDevice::create(&realDevice, SharedLibraryInitParams);
   if (status) {
-    OpenDialogOnGameThread(LOCTEXT("UsbNoDevice", "Could not find the USB device."));
+    OpenDialogOnGameThread(LOCTEXT("UsbNoDeviceAoap",
+      "Could not find the USB accessory mode device."));
     return;
   }
 
@@ -627,10 +628,19 @@ void FCardboardTethering::FinishHandshake() {
 }
 
 void FCardboardTethering::InstallUsbDrivers(const UsbDeviceDesc& d) {
+  if (d.isAoapDesc()) {
+    OpenDialogOnGameThread(LOCTEXT("CannotInstallAoapDriverOnly",
+      "The chosen device is already in accessory mode. If you want to reinstall the driver, please "
+      "reconnect and disconnect it, and then retry the driver installation."));
+    return;
+  }
+
   FString base = FPaths::ConvertRelativePathToFull(
     IPluginManager::Get().FindPlugin("CardboardTethering")->GetBaseDir());
   FString exePath = base / "Binaries/ThirdParty/UsbDriverHelper/Win64/UsbDriverHelper.exe";
-  FString params = FString::Printf(_TEXT("%d %d %d"), d.id.vid, d.id.pid, d.id.mi);
+
+  // Install main driver.
+  FString mainParams = FString::Printf(_TEXT("%d %d"), d.id.vid, d.id.pid);
 
   SHELLEXECUTEINFO shExecInfo;
   shExecInfo.cbSize = sizeof(SHELLEXECUTEINFOA);
@@ -638,26 +648,71 @@ void FCardboardTethering::InstallUsbDrivers(const UsbDeviceDesc& d) {
   shExecInfo.hwnd = nullptr;
   shExecInfo.lpVerb = _T("runas");
   shExecInfo.lpFile = *exePath;
-  shExecInfo.lpParameters = *params;
+  shExecInfo.lpParameters = *mainParams;
   shExecInfo.lpDirectory = nullptr;
   shExecInfo.lpClass = nullptr;
   shExecInfo.nShow = SW_SHOW;
   shExecInfo.hInstApp = nullptr;
   ShellExecuteEx(&shExecInfo);
-
   WaitForSingleObject(shExecInfo.hProcess, INFINITE);
 
   unsigned long installStatus;
   GetExitCodeProcess(shExecInfo.hProcess, &installStatus);
   CloseHandle(shExecInfo.hProcess);
   
-  if (installStatus == 0) {
-    OpenDialogOnGameThread(LOCTEXT("DriversInstalledOK",
-      "Drivers were installed successfully."));
-  } else {
+  if (installStatus != 0) {
     OpenDialogOnGameThread(FText::Format(LOCTEXT("DriversInstalledError",
       "Error during driver install ({0})."), FText::AsNumber((int) installStatus)));
+    return;
   }
+
+  {
+    TSharedPtr<UsbDevice> tempDevice;
+    int status = UsbDevice::create(&tempDevice, SharedLibraryInitParams, d.id.vid, d.id.pid);
+    if (status) {
+      OpenDialogOnGameThread(LOCTEXT("DriversInstalledUsbNoDevice",
+        "Could not find the USB device after installing the driver."));
+      return;
+    }
+
+    tempDevice->convertToAccessory();
+  }
+
+  // Wait for device re-renumeration.
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+
+  // Install AOAP driver.
+  auto devices = UsbDevice::getInstallableDeviceDescriptions();
+  const UsbDeviceDesc* aoapDesc = nullptr;
+  for (const auto& e : devices) {
+    if (e.isAoapDesc()) {
+      aoapDesc = &e;
+      break;
+    }
+  }
+
+  if (aoapDesc == nullptr) {
+    OpenDialogOnGameThread(LOCTEXT("DriversInstalledNoAoap",
+      "Drivers were installed, but the device doesn't appear to support accessory mode."));
+    return;
+  }
+
+  FString aoapParams = FString::Printf(_TEXT("%d %d"), aoapDesc->id.vid, aoapDesc->id.pid);
+  shExecInfo.lpParameters = *aoapParams;
+
+  ShellExecuteEx(&shExecInfo);
+  WaitForSingleObject(shExecInfo.hProcess, INFINITE);
+
+  GetExitCodeProcess(shExecInfo.hProcess, &installStatus);
+  CloseHandle(shExecInfo.hProcess);
+
+  if (installStatus != 0) {
+    OpenDialogOnGameThread(FText::Format(LOCTEXT("DriversInstalledErrorAoap",
+      "Error during accessory mode driver install ({0})."), FText::AsNumber((int) installStatus)));
+    return;
+  }
+
+  OpenDialogOnGameThread(LOCTEXT("DriversInstalledOK", "Drivers were installed successfully."));
 }
 
 void FCardboardTethering::OpenDialogOnGameThread(FText msg) {
