@@ -18,11 +18,15 @@ public:
 	/** This function will be bound to Command. */
 	void PluginButtonClicked();
   ECheckBoxState PluginButtonCheckState();
+
+  void InstallButtonClicked();
+  bool InstallButtonEnabled();
 	
 private:
 
 	void AddToolbarExtension(FToolBarBuilder& Builder);
 	void AddMenuExtension(FMenuBuilder& Builder);
+  void AddInstallMenuExtension(FMenuBuilder& Builder);
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;

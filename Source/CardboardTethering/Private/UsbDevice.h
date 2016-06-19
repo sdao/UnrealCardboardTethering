@@ -19,6 +19,7 @@
 #include "HideWindowsPlatformTypes.h"
 
 struct libusb_device_handle;
+struct wdi_device_info;
 
 class InterruptibleThread {
 public:
@@ -44,11 +45,59 @@ private:
 };
 
 struct UsbDeviceId {
+  // From <https://developer.android.com/studio/run/device.html#VendorIds>.
+  static constexpr uint16_t ANDROID_DEVICE_VIDS[] = {
+    0x0502,
+    0x0b05,
+    0x413c,
+    0x0489,
+    0x04c5,
+    0x04c5,
+    0x091e,
+    0x18d1,
+    0x201E,
+    0x109b,
+    0x03f0,
+    0x0bb4,
+    0x12d1,
+    0x8087,
+    0x24e3,
+    0x2116,
+    0x0482,
+    0x17ef,
+    0x1004,
+    0x22b8,
+    0x0e8d,
+    0x0409,
+    0x2080,
+    0x0955,
+    0x2257,
+    0x10a9,
+    0x1d4d,
+    0x0471,
+    0x04da,
+    0x05c6,
+    0x1f53,
+    0x04e8,
+    0x04dd,
+    0x054c,
+    0x0fce,
+    0x0fce,
+    0x2340,
+    0x0930,
+    0x19d2
+  };
+
   uint16_t vid;
   uint16_t pid;
-  UsbDeviceId() : vid(0), pid(0) {}
-  UsbDeviceId(uint16_t v, uint16_t p) : vid(v), pid(p) {}
+  int8_t mi;
+
+  UsbDeviceId() : vid(0), pid(0), mi(-1) {}
+  UsbDeviceId(uint16_t v, uint16_t p) : vid(v), pid(p), mi(-1) {}
+  UsbDeviceId(uint16_t v, uint16_t p, int8_t m) : vid(v), pid(p), mi(m) {}
+
   bool operator==(const UsbDeviceId& other) const {
+    // Ignore mi for equality.
     return vid == other.vid && pid == other.pid;
   }
   bool isAoapId() const {
@@ -67,6 +116,15 @@ struct UsbDeviceId {
       << std::dec << std::setfill(' ');
     return os.str();
   }
+  bool isAndroidId() const {
+    for (uint16_t v : ANDROID_DEVICE_VIDS) {
+      if (vid == v) {
+        return true;
+      }
+    }
+
+    return false;
+  }
   static std::vector<UsbDeviceId> getAoapIds() {
     return {
       UsbDeviceId(0x18D1, 0x2D00), // accessory
@@ -80,7 +138,7 @@ struct UsbDeviceDesc {
   std::string manufacturer;
   std::string product;
   UsbDeviceDesc(UsbDeviceId i, std::string m, std::string p) : id(i), manufacturer(m), product(p) {}
-  bool isAoapDesc() {
+  bool isAoapDesc() const {
     return id.isAoapId();
   }
 };
@@ -157,6 +215,7 @@ public:
     std::vector<UsbDeviceId> ids = UsbDeviceId::getAoapIds());
   static std::vector<UsbDeviceDesc> getConnectedDeviceDescriptions(
     TSharedPtr<LibraryInitParams>& initParams);
+  static std::vector<UsbDeviceDesc> getInstallableDeviceDescriptions();
   ~UsbDevice();
   std::string getDescription();
   int convertToAccessory();

@@ -9,10 +9,16 @@
 #include "PostProcess/PostProcessHMD.h"
 #include "EndianUtils.h"
 #include "CardboardTetheringStyle.h"
+#include <stdio.h>
 
 #if WITH_EDITOR
 #include "Editor/UnrealEd/Classes/Editor/EditorEngine.h"
 #endif
+
+#include "AllowWindowsPlatformTypes.h"
+#include "libwdi.h"
+#include "Shellapi.h"
+#include "HideWindowsPlatformTypes.h"
 
 //---------------------------------------------------
 // CardboardTethering Plugin Implementation
@@ -60,6 +66,7 @@ class FCardboardTetheringPlugin : public ICardboardTetheringPlugin {
   virtual bool IsConnected() override;
   virtual void ShowConnectDialog() override;
   virtual void Disconnect() override;
+  virtual void ShowDriverConfigDialog() override;
 };
 
 IMPLEMENT_MODULE(FCardboardTetheringPlugin, CardboardTethering)
@@ -86,13 +93,19 @@ bool FCardboardTetheringPlugin::IsConnected() {
 
 void FCardboardTetheringPlugin::ShowConnectDialog() {
   if (CardboardTethering.IsValid()) {
-    return CardboardTethering->ShowConnectUsbDialog();
+    CardboardTethering->ShowConnectUsbDialog();
   }
 }
 
 void FCardboardTetheringPlugin::Disconnect() {
   if (CardboardTethering.IsValid()) {
-    return CardboardTethering->DisconnectUsb();
+    CardboardTethering->DisconnectUsb();
+  }
+}
+
+void FCardboardTetheringPlugin::ShowDriverConfigDialog() {
+  if (CardboardTethering.IsValid()) {
+    CardboardTethering->ShowDriverConfigDialog();
   }
 }
 
@@ -427,7 +440,10 @@ FCardboardTethering::FCardboardTethering() :
   LibraryPath = FPaths::Combine(*BaseDir, TEXT("Binaries/ThirdParty/libusb/Win64/libusb-1.0.dll"));
   LibUsbLibraryHandle = !LibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*LibraryPath) : nullptr;
 
-  if (TurboJpegLibraryHandle && LibUsbLibraryHandle) {
+  LibraryPath = FPaths::Combine(*BaseDir, TEXT("Binaries/ThirdParty/libwdi/Win64/libwdi.dll"));
+  LibWdiLibraryHandle = !LibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*LibraryPath) : nullptr;
+
+  if (TurboJpegLibraryHandle && LibUsbLibraryHandle && LibWdiLibraryHandle) {
     UE_LOG(LogTemp, Warning, TEXT("Found them!"));
     SharedLibraryInitParams = TSharedPtr<LibraryInitParams>(new LibraryInitParams());
   } else
@@ -444,6 +460,8 @@ FCardboardTethering::~FCardboardTethering() {
   TurboJpegLibraryHandle = nullptr;
   FPlatformProcess::FreeDllHandle(LibUsbLibraryHandle);
   TurboJpegLibraryHandle = nullptr;
+  FPlatformProcess::FreeDllHandle(LibWdiLibraryHandle);
+  LibWdiLibraryHandle = nullptr;
 }
 
 bool FCardboardTethering::IsInitialized() const {
@@ -608,6 +626,40 @@ void FCardboardTethering::FinishHandshake() {
   }, 4 * sizeof(float));
 }
 
+void FCardboardTethering::InstallUsbDrivers(const UsbDeviceDesc& d) {
+  FString base = FPaths::ConvertRelativePathToFull(
+    IPluginManager::Get().FindPlugin("CardboardTethering")->GetBaseDir());
+  FString exePath = base / "Binaries/ThirdParty/UsbDriverHelper/Win64/UsbDriverHelper.exe";
+  FString params = FString::Printf(_TEXT("%d %d %d"), d.id.vid, d.id.pid, d.id.mi);
+
+  SHELLEXECUTEINFO shExecInfo;
+  shExecInfo.cbSize = sizeof(SHELLEXECUTEINFOA);
+  shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+  shExecInfo.hwnd = nullptr;
+  shExecInfo.lpVerb = _T("runas");
+  shExecInfo.lpFile = *exePath;
+  shExecInfo.lpParameters = *params;
+  shExecInfo.lpDirectory = nullptr;
+  shExecInfo.lpClass = nullptr;
+  shExecInfo.nShow = SW_SHOW;
+  shExecInfo.hInstApp = nullptr;
+  ShellExecuteEx(&shExecInfo);
+
+  WaitForSingleObject(shExecInfo.hProcess, INFINITE);
+
+  unsigned long installStatus;
+  GetExitCodeProcess(shExecInfo.hProcess, &installStatus);
+  CloseHandle(shExecInfo.hProcess);
+  
+  if (installStatus == 0) {
+    OpenDialogOnGameThread(LOCTEXT("DriversInstalledOK",
+      "Drivers were installed successfully."));
+  } else {
+    OpenDialogOnGameThread(FText::Format(LOCTEXT("DriversInstalledError",
+      "Error during driver install ({0})."), FText::AsNumber((int) installStatus)));
+  }
+}
+
 void FCardboardTethering::OpenDialogOnGameThread(FText msg) {
   FGraphEventRef Task = FFunctionGraphTask::CreateAndDispatchWhenReady([=]() {
     FMessageDialog::Open(EAppMsgType::Ok, msg);
@@ -672,21 +724,29 @@ bool FCardboardTethering::GetCachedConnectionState() const {
 }
 
 void FCardboardTethering::ShowConnectUsbDialog() {
+  ShowUsbListDialog(LOCTEXT("ConnectDialogTitle", "Connect to Android Device"),
+    LOCTEXT("ConnectButtonLabel", "Connect"),
+    true /* forceAccessoryDevice */,
+    [&]() { return UsbDevice::getConnectedDeviceDescriptions(SharedLibraryInitParams); },
+    [&](const UsbDeviceDesc& d) { ConnectUsb(d.id.vid, d.id.pid); });
+}
+
+void FCardboardTethering::ShowUsbListDialog(FText title, FText action, bool forceAccessoryDevice,
+    std::function< std::vector<UsbDeviceDesc>(void) > getDevicesFunc,
+    std::function< void(const UsbDeviceDesc&) > actionFunc) {
   FGraphEventRef Task = FFunctionGraphTask::CreateAndDispatchWhenReady([=]() {
     CardboardTetheringStyle::Initialize();
 
-    FScopeLock lock(&ConnectDialogMutex);
-    if (ConnectDialog.IsValid()) {
-      ConnectDialog->RequestDestroyWindow();
+    FScopeLock lock(&UsbListDialogMutex);
+    if (UsbListDialog.IsValid()) {
+      UsbListDialog->RequestDestroyWindow();
     }
 
-    auto deviceList = UsbDevice::getConnectedDeviceDescriptions(SharedLibraryInitParams);
-    DialogState = ConnectDialogState(deviceList);
-    UE_LOG(LogTemp, Warning, TEXT("selected %d, accessory %d, len %d"),
-      DialogState.selectedItem, DialogState.accessoryItem, DialogState.list.size());
+    auto deviceList = getDevicesFunc();
+    UsbListDialogState = UsbList(deviceList, forceAccessoryDevice);
 
-    ConnectDialog = SNew(SWindow)
-      .Title(LOCTEXT("ConnectDialogTitle", "Connect to Android Device"))
+    UsbListDialog = SNew(SWindow)
+      .Title(title)
       .SizingRule(ESizingRule::FixedSize)
       .ClientSize(FVector2D(400, 100))
       .SupportsMaximize(false)
@@ -701,15 +761,14 @@ void FCardboardTethering::ShowConnectUsbDialog() {
               SNew(SComboButton)
                 .OnGetMenuContent_Lambda([&]() {
                   FMenuBuilder menu(true, nullptr);
-                  int i = 0;
-                  for (int i = 0; i < DialogState.list.size(); ++i) {
-                    const auto& desc = DialogState.list[i];
+                  for (int i = 0; i < UsbListDialogState.list.size(); ++i) {
+                    const auto& desc = UsbListDialogState.list[i];
                     menu.AddMenuEntry(
                       GetDeviceLabel(desc),
                       GetDeviceTooltip(desc),
                       FSlateIcon(),
-                      FUIAction(FExecuteAction::CreateLambda([&]() {
-                        DialogState.selectedItem = i;
+                      FUIAction(FExecuteAction::CreateLambda([&, i]() {
+                        UsbListDialogState.selectedItem = i;
                       })));
                   }
                   return menu.MakeWidget();
@@ -719,19 +778,20 @@ void FCardboardTethering::ShowConnectUsbDialog() {
                   SNew(SHorizontalBox) + SHorizontalBox::Slot().VAlign(VAlign_Center)
                     [
                       SNew(STextBlock).Text_Lambda([&]() {
-                        if (DialogState.selectedItem >= 0 &&
-                            DialogState.selectedItem < DialogState.list.size()) {
-                          return GetDeviceLabel(DialogState.list[DialogState.selectedItem]);
+                        if (UsbListDialogState.selectedItem >= 0 &&
+                          UsbListDialogState.selectedItem < UsbListDialogState.list.size()) {
+                          return GetDeviceLabel(
+                            UsbListDialogState.list[UsbListDialogState.selectedItem]);
                         } else {
                           return FText();
                         }
                       })
                     ]
                 ]
-                .IsEnabled_Lambda([&]() {
-                  if (DialogState.list.size() == 0) {
+                .IsEnabled_Lambda([&, forceAccessoryDevice]() {
+                  if (UsbListDialogState.list.size() == 0) {
                     return false;
-                  } else if (DialogState.accessoryItem != -1) {
+                  } else if (UsbListDialogState.accessoryItem != -1 && forceAccessoryDevice) {
                     return false;
                   } else {
                     return true;
@@ -740,10 +800,10 @@ void FCardboardTethering::ShowConnectUsbDialog() {
             ]
           + SGridPanel::Slot(0, 1).Padding(2.0f)
             [
-              SNew(STextBlock).Text_Lambda([&]() {
-                if (DialogState.list.size() == 0) {
+              SNew(STextBlock).Text_Lambda([&, forceAccessoryDevice]() {
+                if (UsbListDialogState.list.size() == 0) {
                   return LOCTEXT("StatusNoAccessory", "No devices are available.");
-                } else if (DialogState.accessoryItem != -1) {
+                } else if (UsbListDialogState.accessoryItem != -1 && forceAccessoryDevice) {
                   return LOCTEXT("StatusExistingAccessory",
                     "Because there's already a device in accessory mode, it must be used.");
                 } else {
@@ -757,21 +817,22 @@ void FCardboardTethering::ShowConnectUsbDialog() {
               SNew(SBox).HAlign(EHorizontalAlignment::HAlign_Right)
               [
                 SNew(SButton)
-                  .Text(LOCTEXT("ConnectButtonLabel", "Connect"))
+                  .Text(action)
                   .IsEnabled_Lambda([&]() {
-                    return DialogState.selectedItem != -1;
+                    return UsbListDialogState.selectedItem != -1;
                   })
-                  .OnClicked_Lambda([&]() {
-                    if (ConnectDialog.IsValid()) {
-                      ConnectDialog->RequestDestroyWindow();
+                  .OnClicked_Lambda([&, actionFunc]() {
+                    if (UsbListDialog.IsValid()) {
+                      UsbListDialog->RequestDestroyWindow();
                       
-                      if (DialogState.selectedItem >= 0 &&
-                          DialogState.selectedItem < DialogState.list.size()) {
-                        UsbDeviceDesc selection = DialogState.list[DialogState.selectedItem];
-                        ConnectUsb(selection.id.vid, selection.id.pid);
+                      if (UsbListDialogState.selectedItem >= 0 &&
+                        UsbListDialogState.selectedItem < UsbListDialogState.list.size()) {
+                        UsbDeviceDesc selection =
+                          UsbListDialogState.list[UsbListDialogState.selectedItem];
+                        actionFunc(selection);
                       } else {
                         UE_LOG(LogTemp, Error, TEXT("Index %d, %d out of bounds"),
-                          DialogState.selectedItem, DialogState.accessoryItem);
+                          UsbListDialogState.selectedItem, UsbListDialogState.accessoryItem);
                       }
                     }
                     return FReply::Handled();
@@ -779,14 +840,23 @@ void FCardboardTethering::ShowConnectUsbDialog() {
               ]
             ]
       ];
-    FSlateApplication::Get().AddWindow(ConnectDialog.ToSharedRef());
+    FSlateApplication::Get().AddWindow(UsbListDialog.ToSharedRef());
   }, TStatId(), nullptr, ENamedThreads::GameThread);
-
-  // ConnectUsb();
 }
 
 void FCardboardTethering::DisconnectUsb() {
   DisconnectUsb(0);
+}
+
+void FCardboardTethering::ShowDriverConfigDialog() {
+  OpenDialogOnGameThread(LOCTEXT("DriverWarning", "Warning: installing the incorrect drivers"
+    " can cause system instability or even lead to physical system failure. You agree that there"
+    " is no warranty for the driver installer before continuing."));
+  ShowUsbListDialog(LOCTEXT("DriverConfigDialogTitle", "Install Drivers"),
+    LOCTEXT("DriverConfigButtonLabel", "Install"),
+    false /* forceAccessoryDevice */,
+    [&]() { return UsbDevice::getInstallableDeviceDescriptions(); },
+    [&](const UsbDeviceDesc& d) { InstallUsbDrivers(d); });
 }
 
 FText FCardboardTethering::GetDeviceLabel(const UsbDeviceDesc& device) {

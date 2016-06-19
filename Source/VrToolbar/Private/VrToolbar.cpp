@@ -33,12 +33,18 @@ void FVrToolbarModule::StartupModule()
 		FCanExecuteAction(),
     FGetActionCheckState::CreateRaw(this, &FVrToolbarModule::PluginButtonCheckState),
     EUIActionRepeatMode::RepeatDisabled);
+
+  PluginCommands->MapAction(
+    FVrToolbarCommands::Get().InstallAction,
+    FExecuteAction::CreateRaw(this, &FVrToolbarModule::InstallButtonClicked),
+    FCanExecuteAction::CreateRaw(this, &FVrToolbarModule::InstallButtonEnabled));
 		
 	FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
 	
 	{
 		TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());
-		MenuExtender->AddMenuExtension("WindowLayout", EExtensionHook::After, PluginCommands, FMenuExtensionDelegate::CreateRaw(this, &FVrToolbarModule::AddMenuExtension));
+		MenuExtender->AddMenuExtension("WindowGlobalTabSpawners", EExtensionHook::After, PluginCommands, FMenuExtensionDelegate::CreateRaw(this, &FVrToolbarModule::AddMenuExtension));
+    MenuExtender->AddMenuExtension("WindowGlobalTabSpawners", EExtensionHook::After, PluginCommands, FMenuExtensionDelegate::CreateRaw(this, &FVrToolbarModule::AddInstallMenuExtension));
 
 		LevelEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
 	}
@@ -76,9 +82,21 @@ ECheckBoxState FVrToolbarModule::PluginButtonCheckState() {
   }
 }
 
+void FVrToolbarModule::InstallButtonClicked() {
+  ICardboardTetheringPlugin::Get().ShowDriverConfigDialog();
+}
+
+bool FVrToolbarModule::InstallButtonEnabled() {
+  return !ICardboardTetheringPlugin::Get().IsConnected();
+}
+
 void FVrToolbarModule::AddMenuExtension(FMenuBuilder& Builder)
 {
 	Builder.AddMenuEntry(FVrToolbarCommands::Get().PluginAction);
+}
+
+void FVrToolbarModule::AddInstallMenuExtension(FMenuBuilder& Builder) {
+  Builder.AddMenuEntry(FVrToolbarCommands::Get().InstallAction);
 }
 
 void FVrToolbarModule::AddToolbarExtension(FToolBarBuilder& Builder)

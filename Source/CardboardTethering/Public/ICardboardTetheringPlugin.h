@@ -38,4 +38,5 @@ public:
   virtual bool IsConnected() = 0;
   virtual void ShowConnectDialog() = 0;
   virtual void Disconnect() = 0;
+  virtual void ShowDriverConfigDialog() = 0;
 };

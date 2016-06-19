@@ -40,14 +40,18 @@ namespace UnrealBuildTool.Rules {
                 new string[]
                 {
                     "turbojpeg",
-                    "libusb"
+                    "libusb",
+                    "libwdi",
+                    "UsbDriverHelper"
                     // ... add other public dependencies that you statically link with here ...
                 }
             );
 
             AddEngineThirdPartyPrivateStaticDependencies(Target,
                 "turbojpeg",
-                "libusb"
+                "libusb",
+                "libwdi",
+                "UsbDriverHelper"
                 // ... add any third party modules that your module depends on here ...
             );
         }

@@ -157,6 +157,7 @@ public:
   bool GetCachedConnectionState() const;
   void ShowConnectUsbDialog();
   void DisconnectUsb();
+  void ShowDriverConfigDialog();
 
 private:
   FQuat CurHmdOrientation;
@@ -170,6 +171,7 @@ private:
   IRendererModule* RendererModule;
   void* TurboJpegLibraryHandle;
   void* LibUsbLibraryHandle;
+  void* LibWdiLibraryHandle;
 
   std::atomic<float> FeedbackOrientationX;
   std::atomic<float> FeedbackOrientationY;
@@ -183,12 +185,12 @@ private:
   FCriticalSection StatusWindowMutex;
   TSharedPtr<SWindow> StatusWindow;
 
-  struct ConnectDialogState {
+  struct UsbList {
     std::vector<UsbDeviceDesc> list;
     int selectedItem;
     int accessoryItem;
-    ConnectDialogState() : selectedItem(-1), accessoryItem(-1) {}
-    ConnectDialogState(std::vector<UsbDeviceDesc>& newList)
+    UsbList() : selectedItem(-1), accessoryItem(-1) {}
+    UsbList(std::vector<UsbDeviceDesc>& newList, bool preferAccessoryDevice)
         : list(newList), selectedItem(-1), accessoryItem(-1) {
       for (int i = 0; i < list.size(); ++i) {
         if (list[i].isAoapDesc()) {
@@ -196,14 +198,14 @@ private:
         }
       }
       if (list.size() > 0) {
-        selectedItem = accessoryItem == -1 ? 0 : accessoryItem;
+        selectedItem = (accessoryItem == -1 || !preferAccessoryDevice) ? 0 : accessoryItem;
       }
     }
   };
 
-  FCriticalSection ConnectDialogMutex;
-  TSharedPtr<SWindow> ConnectDialog;
-  ConnectDialogState DialogState;
+  FCriticalSection UsbListDialogMutex;
+  TSharedPtr<SWindow> UsbListDialog;
+  UsbList UsbListDialogState;
 
   bool CachedConnectionState;
 
@@ -213,12 +215,17 @@ private:
 
   void GetCurrentPose(FQuat& CurrentOrientation);
   void ConnectUsb(uint16_t vid = 0x18d1, uint16_t pid = 0x4ee2);
+  void InstallUsbDrivers(const UsbDeviceDesc& d);
   void DisconnectUsb(int reason);
   void FinishHandshake();
 
   void OpenDialogOnGameThread(FText msg);
   void OpenStatusWindowOnGameThread(FText msg, std::function<FReply(void)> cancelHandler);
   void CloseStatusWindowOnGameThread();
+
+  void ShowUsbListDialog(FText title, FText action, bool forceAccessoryDevice,
+    std::function< std::vector<UsbDeviceDesc>(void) > getDevicesFunc,
+    std::function< void(const UsbDeviceDesc&) > actionFunc);
 
   static FText GetDeviceLabel(const UsbDeviceDesc& device);
   static FText GetDeviceTooltip(const UsbDeviceDesc& device);

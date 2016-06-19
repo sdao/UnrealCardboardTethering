@@ -8,6 +8,7 @@
 void FVrToolbarCommands::RegisterCommands()
 {
 	UI_COMMAND(PluginAction, "Cardboard", "Connect/disconnect tethered Android device", EUserInterfaceActionType::ToggleButton, FInputGesture());
+  UI_COMMAND(InstallAction, "Install Drivers", "Install drivers for an Android device", EUserInterfaceActionType::Button, FInputGesture());
 }
 
 #undef LOCTEXT_NAMESPACE

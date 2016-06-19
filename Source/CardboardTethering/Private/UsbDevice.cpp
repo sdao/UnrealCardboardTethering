@@ -8,6 +8,7 @@
 #include "AllowWindowsPlatformTypes.h"
 #include "libusb.h"
 #include "turbojpeg.h"
+#include "libwdi.h"
 #include "HideWindowsPlatformTypes.h"
 
 #define CHECKSTATUS(status) if (status) return status;
@@ -137,6 +138,11 @@ std::vector<UsbDeviceDesc> UsbDevice::getConnectedDeviceDescriptions(
       continue;
     }
 
+    UsbDeviceId id(desc.idVendor, desc.idProduct);
+    if (!id.isAndroidId()) {
+      continue;
+    }
+
     libusb_device_handle* hnd;
     status = libusb_open(dev, &hnd);
     if (status < 0) {
@@ -167,12 +173,40 @@ std::vector<UsbDeviceDesc> UsbDevice::getConnectedDeviceDescriptions(
       continue;
     }
 
-    descs.push_back(UsbDeviceDesc(UsbDeviceId(desc.idVendor, desc.idProduct),
-      manufacturerString, productString));
+    descs.push_back(UsbDeviceDesc(id, manufacturerString, productString));
     libusb_close(hnd);
   }
 
   libusb_free_device_list(devices, true);
+  return descs;
+}
+
+std::vector<UsbDeviceDesc> UsbDevice::getInstallableDeviceDescriptions() {
+  std::vector<UsbDeviceDesc> descs;
+
+  wdi_options_create_list opts;
+  opts.list_all = true;
+  opts.list_hubs = false;
+  opts.trim_whitespaces = true;
+
+  wdi_device_info *device, *list;
+  if (wdi_create_list(&list, &opts) == WDI_SUCCESS) {
+    for (device = list; device != NULL; device = device->next) {
+      UsbDeviceId id(device->vid, device->pid);
+      if (!id.isAndroidId()) {
+        continue;
+      }
+
+      std::string manufacturer(wdi_get_vendor_name(device->vid));
+      std::string product(device->desc);
+      descs.push_back(UsbDeviceDesc(
+        UsbDeviceId(device->vid, device->pid, device->is_composite ? device->mi : -1),
+        manufacturer,
+        product));
+    }
+    wdi_destroy_list(list);
+  }
+
   return descs;
 }
 
