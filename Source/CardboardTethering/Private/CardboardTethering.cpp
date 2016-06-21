@@ -525,7 +525,9 @@ void FCardboardTethering::ConnectUsb(uint16_t vid, uint16_t pid) {
     TSharedPtr<UsbDevice> tempDevice;
     status = UsbDevice::create(&tempDevice, SharedLibraryInitParams, vid, pid);
     if (status) {
-      OpenDialogOnGameThread(LOCTEXT("UsbNoDevice", "Could not find the USB device."));
+      OpenErrorDialogOnGameThread(LOCTEXT("UsbConnectError", "Error connecting to USB device"),
+        LOCTEXT("UsbNotInstalled", "device not installed"),
+        status);
       return;
     }
 
@@ -539,8 +541,9 @@ void FCardboardTethering::ConnectUsb(uint16_t vid, uint16_t pid) {
   TSharedPtr<UsbDevice> realDevice;
   status = UsbDevice::create(&realDevice, SharedLibraryInitParams);
   if (status) {
-    OpenDialogOnGameThread(LOCTEXT("UsbNoDeviceAoap",
-      "Could not find the USB accessory mode device."));
+    OpenErrorDialogOnGameThread(LOCTEXT("UsbConnectError", "Error connecting to USB device"),
+      LOCTEXT("UsbAoapNotInstalled", "accessory device not installed"),
+      status);
     return;
   }
 
@@ -562,7 +565,9 @@ void FCardboardTethering::ConnectUsb(uint16_t vid, uint16_t pid) {
       FinishHandshake();
     } else {
       DisconnectUsb(0);
-      OpenDialogOnGameThread(LOCTEXT("UsbHandshakeFailed", "USB handshake failure."));
+      OpenErrorDialogOnGameThread(LOCTEXT("UsbHandshakeError", "Error during USB handshake"),
+        LOCTEXT("UsbHandshakeFailure", "handshake failed"),
+        0);
     }
   });
 }
@@ -581,9 +586,9 @@ void FCardboardTethering::DisconnectUsb(int reason) {
   UE_LOG(LogTemp, Warning, TEXT("DISCONNECTED!"));
 
   if (reason != 0) {
-    OpenDialogOnGameThread(FText::Format(LOCTEXT("UsbConnectionFailed",
-      "The USB connection failed ({0}). Most likely the physical connection failed, "
-      "e.g. the cable was disconnected."), FText::AsNumber(reason)));
+    OpenErrorDialogOnGameThread(LOCTEXT("UsbDisconnectError", "The USB connection failed"),
+      LOCTEXT("UsbPhysicalFailure", "most likely the physical connection failed"),
+      reason);
   }
 }
 
@@ -656,13 +661,14 @@ void FCardboardTethering::InstallUsbDrivers(const UsbDeviceDesc& d) {
   ShellExecuteEx(&shExecInfo);
   WaitForSingleObject(shExecInfo.hProcess, INFINITE);
 
-  unsigned long installStatus;
+  unsigned long installStatus = -1;
   GetExitCodeProcess(shExecInfo.hProcess, &installStatus);
   CloseHandle(shExecInfo.hProcess);
   
   if (installStatus != 0) {
-    OpenDialogOnGameThread(FText::Format(LOCTEXT("DriversInstalledError",
-      "Error during driver install ({0})."), FText::AsNumber((int) installStatus)));
+    OpenErrorDialogOnGameThread(LOCTEXT("DriverInstallError", "Error during driver installation"),
+      LOCTEXT("InstallerFailure", "driver installation helper failed"),
+      installStatus);
     return;
   }
 
@@ -670,8 +676,9 @@ void FCardboardTethering::InstallUsbDrivers(const UsbDeviceDesc& d) {
     TSharedPtr<UsbDevice> tempDevice;
     int status = UsbDevice::create(&tempDevice, SharedLibraryInitParams, d.id.vid, d.id.pid);
     if (status) {
-      OpenDialogOnGameThread(LOCTEXT("DriversInstalledUsbNoDevice",
-        "Could not find the USB device after installing the driver."));
+      OpenErrorDialogOnGameThread(LOCTEXT("DriverInstallError", "Error during driver installation"),
+        LOCTEXT("ReopenNotFound", "device not installed when re-opening"),
+        status);
       return;
     }
 
@@ -682,7 +689,7 @@ void FCardboardTethering::InstallUsbDrivers(const UsbDeviceDesc& d) {
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
   // Install AOAP driver.
-  auto devices = UsbDevice::getInstallableDeviceDescriptions();
+  auto devices = UsbDevice::getInstallableDeviceDescriptions(SharedLibraryInitParams);
   const UsbDeviceDesc* aoapDesc = nullptr;
   for (const auto& e : devices) {
     if (e.isAoapDesc()) {
@@ -692,8 +699,9 @@ void FCardboardTethering::InstallUsbDrivers(const UsbDeviceDesc& d) {
   }
 
   if (aoapDesc == nullptr) {
-    OpenDialogOnGameThread(LOCTEXT("DriversInstalledNoAoap",
-      "Drivers were installed, but the device doesn't appear to support accessory mode."));
+    OpenErrorDialogOnGameThread(LOCTEXT("DriverInstallError", "Error during driver installation"),
+      LOCTEXT("AoapNotSupported", "device doesn't appear to support accessory mode"),
+      0);
     return;
   }
 
@@ -703,12 +711,14 @@ void FCardboardTethering::InstallUsbDrivers(const UsbDeviceDesc& d) {
   ShellExecuteEx(&shExecInfo);
   WaitForSingleObject(shExecInfo.hProcess, INFINITE);
 
+  installStatus = -1;
   GetExitCodeProcess(shExecInfo.hProcess, &installStatus);
   CloseHandle(shExecInfo.hProcess);
 
   if (installStatus != 0) {
-    OpenDialogOnGameThread(FText::Format(LOCTEXT("DriversInstalledErrorAoap",
-      "Error during accessory mode driver install ({0})."), FText::AsNumber((int) installStatus)));
+    OpenErrorDialogOnGameThread(LOCTEXT("DriverInstallError", "Error during driver installation"),
+      LOCTEXT("InstallerFailure", "accessory mode driver installation helper failed"),
+      installStatus);
     return;
   }
 
@@ -718,6 +728,15 @@ void FCardboardTethering::InstallUsbDrivers(const UsbDeviceDesc& d) {
 void FCardboardTethering::OpenDialogOnGameThread(FText msg) {
   FGraphEventRef Task = FFunctionGraphTask::CreateAndDispatchWhenReady([=]() {
     FMessageDialog::Open(EAppMsgType::Ok, msg);
+  }, TStatId(), nullptr, ENamedThreads::GameThread);
+}
+
+void FCardboardTethering::OpenErrorDialogOnGameThread(FText msg, FText reason, int code) {
+  FText formattedMsg = FText::Format(LOCTEXT("ErrorFormatString", "{0}: {1} ({2})."),
+    msg, reason, FText::AsNumber(code));
+
+  FGraphEventRef Task = FFunctionGraphTask::CreateAndDispatchWhenReady([=]() {
+    FMessageDialog::Open(EAppMsgType::Ok, formattedMsg);
   }, TStatId(), nullptr, ENamedThreads::GameThread);
 }
 
@@ -782,7 +801,7 @@ void FCardboardTethering::ShowConnectUsbDialog() {
   ShowUsbListDialog(LOCTEXT("ConnectDialogTitle", "Connect to Android Device"),
     LOCTEXT("ConnectButtonLabel", "Connect"),
     true /* forceAccessoryDevice */,
-    [&]() { return UsbDevice::getConnectedDeviceDescriptions(SharedLibraryInitParams); },
+    [&]() { return UsbDevice::getInstallableDeviceDescriptions(SharedLibraryInitParams); },
     [&](const UsbDeviceDesc& d) { ConnectUsb(d.id.vid, d.id.pid); });
 }
 
@@ -905,12 +924,18 @@ void FCardboardTethering::DisconnectUsb() {
 
 void FCardboardTethering::ShowDriverConfigDialog() {
   OpenDialogOnGameThread(LOCTEXT("DriverWarning", "Warning: installing the incorrect drivers"
-    " can cause system instability or even lead to physical system failure. You agree that there"
-    " is no warranty for the driver installer before continuing."));
+    " can cause system instability or even lead to physical system failure."
+    "\n\n"
+    "THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING "
+    "BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND "
+    "NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, "
+    "DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING "
+    "FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE "
+    "SOFTWARE."));
   ShowUsbListDialog(LOCTEXT("DriverConfigDialogTitle", "Install Drivers"),
     LOCTEXT("DriverConfigButtonLabel", "Install"),
     false /* forceAccessoryDevice */,
-    [&]() { return UsbDevice::getInstallableDeviceDescriptions(); },
+    [&]() { return UsbDevice::getInstallableDeviceDescriptions(SharedLibraryInitParams); },
     [&](const UsbDeviceDesc& d) { InstallUsbDrivers(d); });
 }
 

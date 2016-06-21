@@ -140,6 +140,13 @@ struct UsbDeviceDesc {
   bool isAoapDesc() const {
     return id.isAoapId();
   }
+  bool operator<(const UsbDeviceDesc& other) {
+    if (id.vid == other.id.vid) {
+      return id.pid < other.id.pid;
+    } else {
+      return id.vid < other.id.vid;
+    }
+  }
 };
 
 class UsbDevice {
@@ -187,6 +194,10 @@ class UsbDevice {
     uint8_t inEndpoint,
     uint8_t outEndpoint);
 
+  static std::vector<UsbDeviceDesc> getInstallableDeviceDescriptionsInternal();
+  static std::vector<UsbDeviceDesc> getConnectedDeviceDescriptionsInternal(
+    TSharedPtr<LibraryInitParams>& initParams);
+
 public:
   static constexpr int STATUS_OK = 0;
   static constexpr int STATUS_NOT_FOUND_ERROR = -1;
@@ -212,9 +223,8 @@ public:
   static int create(TSharedPtr<UsbDevice>* out,
     TSharedPtr<LibraryInitParams>& initParams,
     std::vector<UsbDeviceId> ids = UsbDeviceId::getAoapIds());
-  static std::vector<UsbDeviceDesc> getConnectedDeviceDescriptions(
+  static std::vector<UsbDeviceDesc> getInstallableDeviceDescriptions(
     TSharedPtr<LibraryInitParams>& initParams);
-  static std::vector<UsbDeviceDesc> getInstallableDeviceDescriptions();
   ~UsbDevice();
   std::string getDescription();
   int convertToAccessory();

@@ -220,6 +220,7 @@ private:
   void FinishHandshake();
 
   void OpenDialogOnGameThread(FText msg);
+  void OpenErrorDialogOnGameThread(FText msg, FText reason, int code);
   void OpenStatusWindowOnGameThread(FText msg, std::function<FReply(void)> cancelHandler);
   void CloseStatusWindowOnGameThread();
 

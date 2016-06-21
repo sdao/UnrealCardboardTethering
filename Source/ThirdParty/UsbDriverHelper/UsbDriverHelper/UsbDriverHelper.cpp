@@ -23,7 +23,7 @@ std::string getInfName(const wdi_device_info* device) {
 
 int main(int argc, char** argv) {
   if (argc < 2) {
-    return -1;
+    return 1;
   }
 
   std::string vidStr(argv[1]);
@@ -54,12 +54,12 @@ int main(int argc, char** argv) {
 
         int status = wdi_prepare_driver(device, nullptr, infName.c_str(), &prepareOpts);
         if (status != WDI_SUCCESS) {
-          return -2;
+          return 2;
         }
         
         status = wdi_install_driver(device, nullptr, infName.c_str(), nullptr);
         if (status != WDI_SUCCESS) {
-          return -3;
+          return 3;
         }
 
         return 0;
@@ -68,5 +68,5 @@ int main(int argc, char** argv) {
     wdi_destroy_list(list);
   }
 
-  return -4;
+  return 4;
 }

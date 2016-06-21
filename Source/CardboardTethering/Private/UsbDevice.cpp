@@ -4,6 +4,7 @@
 #include "WindowsHelpers.h"
 #include <cstring>
 #include <algorithm>
+#include <iterator>
 
 #include "AllowWindowsPlatformTypes.h"
 #include "libusb.h"
@@ -121,7 +122,7 @@ int UsbDevice::create(
   return STATUS_OK;
 }
 
-std::vector<UsbDeviceDesc> UsbDevice::getConnectedDeviceDescriptions(
+std::vector<UsbDeviceDesc> UsbDevice::getConnectedDeviceDescriptionsInternal(
     TSharedPtr<LibraryInitParams>& initParams) {
   std::vector<UsbDeviceDesc> descs;
 
@@ -181,7 +182,7 @@ std::vector<UsbDeviceDesc> UsbDevice::getConnectedDeviceDescriptions(
   return descs;
 }
 
-std::vector<UsbDeviceDesc> UsbDevice::getInstallableDeviceDescriptions() {
+std::vector<UsbDeviceDesc> UsbDevice::getInstallableDeviceDescriptionsInternal() {
   std::vector<UsbDeviceDesc> descs;
 
   wdi_options_create_list opts;
@@ -201,17 +202,30 @@ std::vector<UsbDeviceDesc> UsbDevice::getInstallableDeviceDescriptions() {
         continue;
       }
 
-      std::string manufacturer(wdi_get_vendor_name(device->vid));
-      std::string product(device->desc);
       descs.push_back(UsbDeviceDesc(
         UsbDeviceId(device->vid, device->pid),
-        manufacturer,
-        product));
+        std::string(),
+        std::string()));
     }
     wdi_destroy_list(list);
   }
 
   return descs;
+}
+
+std::vector<UsbDeviceDesc> UsbDevice::getInstallableDeviceDescriptions(
+  TSharedPtr<LibraryInitParams>& initParams) {
+  std::vector<UsbDeviceDesc> connectedDescs = getConnectedDeviceDescriptionsInternal(initParams);
+  std::vector<UsbDeviceDesc> installableDescs = getInstallableDeviceDescriptionsInternal();
+  std::vector<UsbDeviceDesc> outputDescs;
+
+  std::sort(connectedDescs.begin(), connectedDescs.end());
+  std::sort(installableDescs.begin(), installableDescs.end());
+
+  std::set_intersection(connectedDescs.begin(), connectedDescs.end(),
+    installableDescs.begin(), installableDescs.end(),
+    std::back_inserter(outputDescs));
+  return outputDescs;
 }
 
 UsbDevice::UsbDevice(TSharedPtr<LibraryInitParams>& initParams,
