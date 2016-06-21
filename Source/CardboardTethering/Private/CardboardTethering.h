@@ -232,4 +232,4 @@ private:
   static FText GetDeviceTooltip(const UsbDeviceDesc& device);
 };
 
-DEFINE_LOG_CATEGORY_STATIC(LogHMD, Log, All);
+DEFINE_LOG_CATEGORY_STATIC(LogCardboardHMD, Log, All);

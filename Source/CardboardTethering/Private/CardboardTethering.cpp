@@ -444,15 +444,12 @@ FCardboardTethering::FCardboardTethering() :
   LibWdiLibraryHandle = !LibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*LibraryPath) : nullptr;
 
   if (TurboJpegLibraryHandle && LibUsbLibraryHandle && LibWdiLibraryHandle) {
-    UE_LOG(LogTemp, Warning, TEXT("Found them!"));
     SharedLibraryInitParams = TSharedPtr<LibraryInitParams>(new LibraryInitParams());
   } else
 #endif // PLATFORM_WINDOWS
   {
     FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("ThirdPartyLibraryError", "Failed to load example third party library"));
   }
-
-  UE_LOG(LogTemp, Warning, TEXT("DONE CREATING!"));
 }
 
 FCardboardTethering::~FCardboardTethering() {
@@ -470,7 +467,6 @@ bool FCardboardTethering::IsInitialized() const {
 
 void FCardboardTethering::UpdateViewport(bool bUseSeparateRenderTarget, const FViewport& InViewport, SViewport* ViewportWidget) {
   check(IsInGameThread());
-  //UE_LOG(LogTemp, Warning, TEXT("jpeg handle %d"), TurboJpegLibraryHandle);
   FRHIViewport* const ViewportRHI = InViewport.GetViewportRHI().GetReference();
 
   if (!IsStereoEnabled()) {
@@ -547,7 +543,7 @@ void FCardboardTethering::ConnectUsb(uint16_t vid, uint16_t pid) {
     return;
   }
 
-  UE_LOG(LogTemp, Warning, TEXT("CONNECTED!"));
+  UE_LOG(LogCardboardHMD, Warning, TEXT("USB connected"));
   CachedConnectionState = true;
 
   OpenStatusWindowOnGameThread(
@@ -578,12 +574,12 @@ void FCardboardTethering::DisconnectUsb(int reason) {
 
   FScopeLock lock(&ActiveUsbDeviceMutex);
   if (!ActiveUsbDevice.IsValid()) {
-    UE_LOG(LogTemp, Warning, TEXT("Already disconnected"));
+    UE_LOG(LogCardboardHMD, Warning, TEXT("USB already disconnected"));
     return;
   }
 
   ActiveUsbDevice = nullptr;
-  UE_LOG(LogTemp, Warning, TEXT("DISCONNECTED!"));
+  UE_LOG(LogCardboardHMD, Warning, TEXT("USB disconnected"));
 
   if (reason != 0) {
     OpenErrorDialogOnGameThread(LOCTEXT("UsbDisconnectError", "The USB connection failed"),
@@ -604,7 +600,6 @@ void FCardboardTethering::FinishHandshake() {
   ViewerWidth.store(w);
   ViewerHeight.store(h);
   ViewerInterpupillary.store(ip);
-  UE_LOG(LogTemp, Warning, TEXT("w=%d, h=%d, ip=%f"), w, h, ip);
 
   // Set up the send loop.
   ActiveUsbDevice->beginSendLoop([this](int reason) {
@@ -664,7 +659,7 @@ void FCardboardTethering::InstallUsbDrivers(const UsbDeviceDesc& d) {
   unsigned long installStatus = -1;
   GetExitCodeProcess(shExecInfo.hProcess, &installStatus);
   CloseHandle(shExecInfo.hProcess);
-  
+
   if (installStatus != 0) {
     OpenErrorDialogOnGameThread(LOCTEXT("DriverInstallError", "Error during driver installation"),
       LOCTEXT("InstallerFailure", "driver installation helper failed"),
@@ -898,15 +893,12 @@ void FCardboardTethering::ShowUsbListDialog(FText title, FText action, bool forc
                   .OnClicked_Lambda([&, actionFunc]() {
                     if (UsbListDialog.IsValid()) {
                       UsbListDialog->RequestDestroyWindow();
-                      
+
                       if (UsbListDialogState.selectedItem >= 0 &&
                         UsbListDialogState.selectedItem < UsbListDialogState.list.size()) {
                         UsbDeviceDesc selection =
                           UsbListDialogState.list[UsbListDialogState.selectedItem];
                         actionFunc(selection);
-                      } else {
-                        UE_LOG(LogTemp, Error, TEXT("Index %d, %d out of bounds"),
-                          UsbListDialogState.selectedItem, UsbListDialogState.accessoryItem);
                       }
                     }
                     return FReply::Handled();

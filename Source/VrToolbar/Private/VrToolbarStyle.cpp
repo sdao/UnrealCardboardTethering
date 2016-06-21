@@ -45,7 +45,8 @@ TSharedRef< FSlateStyleSet > FVrToolbarStyle::Create()
 	TSharedRef< FSlateStyleSet > Style = MakeShareable(new FSlateStyleSet("VrToolbarStyle"));
 	Style->SetContentRoot(IPluginManager::Get().FindPlugin("CardboardTethering")->GetBaseDir() / TEXT("Resources"));
 
-	Style->Set("VrToolbar.PluginAction", new IMAGE_BRUSH(TEXT("ButtonIcon_40x"), Icon40x40));
+  Style->Set("VrToolbar.PluginAction", new IMAGE_BRUSH(TEXT("phone40"), Icon40x40));
+  Style->Set("VrToolbar.InstallAction", new IMAGE_BRUSH(TEXT("software40"), Icon40x40));
 
 	return Style;
 }

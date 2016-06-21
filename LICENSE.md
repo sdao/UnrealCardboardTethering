@@ -860,7 +860,7 @@ That's all there is to it!
 ```
 
 [libwdi](https://github.com/pbatard/libwdi)
----------------------------------------------------------------
+-------------------------------------------
 A binary DLL and includes for libusb are included at
 `Source/ThirdParty/libwdi`. This libusb was built from Git commit @93732a5
 with only WinUSB drivers included.
@@ -1033,6 +1033,15 @@ apply, that proxy's public statement of acceptance of any version is
 permanent authorization for you to choose that version for the
 Library.
 ```
+
+[GNOME Adwaita icon theme](https://github.com/GNOME/adwaita-icon-theme)
+-----------------------------------------------------------------------
+Several Adwaita icons are included in the `Resources` folder. They can be
+swapped out after compiling, so they satisfy the distribution terms of the
+LGPL 3.
+
+### GNU LGPL 3:
+See above.
 
 [boost](http://www.boost.org)
 -----------------------------
